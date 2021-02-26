@@ -15,21 +15,13 @@ public:
     StudentWorld* world() const;
     double getVerticalSpeed() const;
     void setVerticalSpeed(double speed);
-      // If this actor is affected by holy water projectiles, then inflict that
-      // affect on it and return true; otherwise, return false.
     virtual bool beSprayedIfAppropriate();
-      // Does this object affect zombie cab placement and speed?
     virtual bool isCollisionAvoidanceWorthy() const;
-      // Adjust the x coordinate by dx to move to a position with a y coordinate
-      // determined by this actor's vertical speed relative to GhostRacser's
-      // vertical speed.  Return true if the new position is within the view;
-      // otherwise, return false, with the actor dead.
-    virtual bool moveRelativeToGhostRacerVerticalSpeed(double dx);
     virtual ~Actor();
 private:
     bool m_dead;
-    StudentWorld* m_world;
     double m_vspeed;
+    StudentWorld* m_world;
 };
 
 class BorderLine : public Actor
@@ -83,11 +75,14 @@ public:
     void setHorizSpeed(int s);
       // Move the pedestrian.  If the pedestrian doesn't go off screen and
       // should pick a new movement plan, pick a new plan.
-    void moveAndPossiblyPickPlan();
+    virtual void moveAndPossiblyPickPlan();
+    void setPlan(int plan);
+    void decrementPlan();
+    int getPlan();
     virtual ~Pedestrian();
 private:
     int m_hspeed;
-    
+    int m_plan;
 };
 
 class HumanPedestrian : public Pedestrian
@@ -113,17 +108,18 @@ private:
     int m_grunts;
 };
 
-class ZombieCab : public Agent
+class ZombieCab : public Pedestrian
 {
 public:
     ZombieCab(StudentWorld* sw, double x, double y);
     virtual void doSomething();
-    virtual int getHSpeed();
-    virtual void setHSpeed(int hspeed);
     virtual bool beSprayedIfAppropriate();
+    bool checkDamage();
+    void doneDamage();
+    virtual void moveAndPossiblyPickPlan();
     virtual ~ZombieCab();
 private:
-    int m_hspeed;
+    bool m_damage;
 };
 
 class Spray : public Actor

@@ -25,22 +25,12 @@ public:
     virtual int init();
     virtual int move();
     virtual void cleanUp();
-    
 
-      // Return a pointer to the world's GhostRacer.
     GhostRacer* getGhostRacer();
-
-      // Add an actor to the world.
     void addActor(Actor* a);
-
-      // Record that a soul was saved.
     void recordSoulSaved();
+    int getSoulsSaved();
     
-    int getSoulsSaved(); 
-    
-    void makeSpray();
-    
-
       // If actor a overlaps some live actor that is affected by a holy water
       // projectile, inflict a holy water spray on that actor and return true;
       // otherwise, return false.  (See Actor::beSprayedIfAppropriate.)
@@ -48,14 +38,15 @@ public:
 
       // Return true if actor a1 overlaps actor a2, otherwise false.
     bool overlaps(const Actor* a1, const Actor* a2) const;
-
       // If actor a overlaps this world's GhostRacer, return a pointer to the
       // GhostRacer; otherwise, return nullptr
     bool getOverlappingGhostRacer(Actor* a) const;
+    bool closest(int lane); 
 private:
     GhostRacer* m_ghostracer;
     std::list<Actor*> m_actors;
     int m_souls;
+    
 };
 
 #endif // STUDENTWORLD_INCLUDED

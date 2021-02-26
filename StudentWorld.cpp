@@ -53,7 +53,6 @@ int StudentWorld::move()
     list<Actor*>::iterator it = m_actors.begin();
     for (it = m_actors.begin(); it != m_actors.end(); )
     {
-        int lives = getLives();
         if(!(*it)->isDead())
         {
         (*it)->doSomething();
@@ -99,12 +98,7 @@ int StudentWorld::move()
     int ChanceZombiePed = max(100 - getLevel() * 10, 20);
     int ChanceHumanPed = max(200 - getLevel() * 10, 30);
     int ChanceOfHolyWater = 100 + 10 * getLevel();
-    int ChanceOfHealing = 100 + 10 * getLevel();
     int ChanceOfLostSoul = 100;
-    if (randInt(0, ChanceVehicle - 1) == 0){
-        ZombieCab* zombiecab = new ZombieCab(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
-        addActor(zombiecab);
-    }
     if (randInt(0, ChanceOilSlick - 1) == 0){
         OilSlick* oilslick = new OilSlick(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
         addActor(oilslick);
@@ -121,10 +115,6 @@ int StudentWorld::move()
        HolyWaterGoodie* holywatergoodie = new HolyWaterGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
         addActor(holywatergoodie);
     }
-//    if (randInt(0, ChanceOfHealing - 1) == 0){
-//       HealingGoodie* healinggoodie = new HealingGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
-//        addActor(healinggoodie);
-//    }
     if (randInt(0, ChanceOfLostSoul - 1) == 0){
         SoulGoodie* soulgoodie = new SoulGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
         addActor(soulgoodie);
@@ -196,8 +186,66 @@ bool StudentWorld::getOverlappingGhostRacer(Actor *a) const{
     return false;
 }
 
-void StudentWorld::makeSpray(){
-    Spray* newspray = new Spray(this, m_ghostracer->getX(), m_ghostracer->getY() + SPRITE_HEIGHT, m_ghostracer->getDirection());
-    m_actors.push_front(newspray);
+bool StudentWorld::closest(int lane){
+    list<Actor*>::iterator bottom = m_actors.begin();
+    list<Actor*>::iterator top = m_actors.begin();
+    list<Actor*>::iterator it = m_actors.begin();
+    double topDistance = 0;
+    double bottomDistance = VIEW_HEIGHT;
+    while (it != m_actors.end()){
+        if ((*it)->isCollisionAvoidanceWorthy() && (*it)->getY() < bottomDistance && (*it)->getX() > LEFT_EDGE + lane * ROAD_WIDTH/3 && (*it)->getX() < LEFT_EDGE + (lane +1) * ROAD_WIDTH/3){
+            bottom = it;
+            bottomDistance = (*it)->getY();
+        }
+        if ((*it)->isCollisionAvoidanceWorthy() && (*it)->getY() > topDistance && (*it)->getX() > LEFT_EDGE + lane * ROAD_WIDTH/3 && (*it)->getX() < LEFT_EDGE + (lane +1) * ROAD_WIDTH/3){
+            top = it;
+            topDistance = (*it)->getY();
+        }
+    }
+    double x = 0;
+    double y = 0;
+    if (bottom == m_actors.end() || bottomDistance > VIEW_HEIGHT/3){
+        switch (lane){
+            case 0:
+                x = ROAD_CENTER - ROAD_WIDTH/3;
+                y = SPRITE_HEIGHT / 2;
+                break;
+            case 1:
+                x = ROAD_CENTER;
+                y = SPRITE_HEIGHT / 2;
+                break;
+            case 2:
+                x = ROAD_CENTER + ROAD_WIDTH/3;
+                y = SPRITE_HEIGHT / 2;
+                break;
+            default:
+                break;
+        }
+        ZombieCab* zombiecab = new ZombieCab(this, x, y);
+        addActor(zombiecab);
+        return true;
+    }
+    if (top == m_actors.end() || topDistance < 2 * VIEW_HEIGHT/3){
+        switch (lane){
+            case 0:
+                x = ROAD_CENTER - ROAD_WIDTH/3;
+                y = VIEW_HEIGHT - SPRITE_HEIGHT / 2;
+                break;
+            case 1:
+                x = ROAD_CENTER;
+                y = VIEW_HEIGHT - SPRITE_HEIGHT / 2;
+                break;
+            case 2:
+                x = ROAD_CENTER + ROAD_WIDTH/3;
+                y = VIEW_HEIGHT - SPRITE_HEIGHT / 2;
+                break;
+            default:
+                break;
+        }
+        ZombieCab* zombiecab = new ZombieCab(this, x, y);
+        addActor(zombiecab);
+        return true;
+    }
+    return false;
 }
 

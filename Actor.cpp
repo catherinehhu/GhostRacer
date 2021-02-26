@@ -5,14 +5,12 @@ const double PI = 3.14159265;
 const double LEFT_EDGE = ROAD_CENTER - ROAD_WIDTH/2;
 const double RIGHT_EDGE = ROAD_CENTER + ROAD_WIDTH/2;
 
-// Students:  Add code to this file, Actor.h, StudentWorld.h, and StudentWorld.cpp
-
 Actor::Actor(StudentWorld* sw, int imageID, double x, double y, int dir = 0, double size = 0, unsigned int depth = 0)
 :GraphObject(imageID, x, y, dir, size, depth)
 {
     m_dead = false;
-    m_world = sw;
     m_vspeed = 0;
+    m_world = sw;
 }
 Actor::~Actor(){}
 bool Actor::isDead() const{
@@ -35,19 +33,6 @@ bool Actor::beSprayedIfAppropriate(){
 }
 bool Actor::isCollisionAvoidanceWorthy() const{
     return true;
-}
-bool Actor::moveRelativeToGhostRacerVerticalSpeed(double dx){
-    double vert_speed = getVerticalSpeed() - world() ->getGhostRacer()->getVerticalSpeed();
-    double new_y = getY() + vert_speed;
-    double new_x = dx;
-    moveTo(new_x, new_y);
-    if (new_x < 0 || new_y > 0 || new_x > VIEW_WIDTH || new_y > VIEW_HEIGHT){
-        setDead();
-        return false;
-    }
-    else{
-        return true;
-    }
 }
 
 BorderLine::BorderLine(StudentWorld* sw, double x, double y, bool isYellow)
@@ -77,7 +62,6 @@ Agent::Agent(StudentWorld* sw, int imageID, double x, double y, int dir, double 
     m_hp = hp;
 }
 Agent::~Agent(){}
-
 bool Agent::isCollisionAvoidanceWorthy() const{
     return true;
 }
@@ -211,9 +195,9 @@ Pedestrian::Pedestrian(StudentWorld* sw, int imageID, double x, double y, double
     m_hspeed = 0;
     setVerticalSpeed(-4);
     setHP(2);
+    setPlan(0);
 }
 Pedestrian::~Pedestrian(){}
-
 int Pedestrian::soundWhenHurt() const{
     return SOUND_PED_HURT;
 }
@@ -227,6 +211,33 @@ void Pedestrian::setHorizSpeed(int hspeed){
     m_hspeed = hspeed;
 }
 void Pedestrian::moveAndPossiblyPickPlan(){
+    decrementPlan();
+    if (getPlan() > 0){
+        return;
+    }
+    else{
+        int chooseSpeed = 0;
+        while (chooseSpeed == 0){
+            chooseSpeed = randInt(-3,3);
+        }
+        setHorizSpeed(chooseSpeed);
+        setPlan(randInt(4, 32));
+        if (getHorizSpeed() < 0){
+            setDirection(180);
+        }
+        else{
+            setDirection(0);
+        }
+    }
+}
+void Pedestrian::decrementPlan(){
+    m_plan--;
+}
+void Pedestrian::setPlan(int plan){
+    m_plan = plan;
+}
+int Pedestrian::getPlan(){
+    return m_plan;
 }
 
 HumanPedestrian::HumanPedestrian(StudentWorld* sw, double x, double y)
@@ -244,7 +255,6 @@ void HumanPedestrian::doSomething(){
         return;
     }
     else{
-//    moveAndPossiblyPickPlan();
         double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
         double horiz_speed = getHorizSpeed();
         double new_y = getY() + vert_speed;
@@ -256,15 +266,7 @@ void HumanPedestrian::doSomething(){
             return;
         }
     }
-    int negative = randInt(-3,-1);
-    int positive = randInt(1,3);
-    setHorizSpeed(randInt(negative, positive));
-    if (getHorizSpeed() < 0){
-        setDirection(180);
-    }
-    else{
-        setDirection(0);
-    }
+    moveAndPossiblyPickPlan();
 }
 bool HumanPedestrian::beSprayedIfAppropriate(){
     int currDirection = getDirection();
@@ -275,7 +277,18 @@ bool HumanPedestrian::beSprayedIfAppropriate(){
     return true;
 }
 bool HumanPedestrian::takeDamageAndPossiblyDie(int hp){
-    setDead();
+    setHP(hp);
+    if (getHP() > 0 && getHP() < 2){
+            if (randInt(1,5) == 5){
+                world()->addActor(new HealingGoodie(world(),getX(), getY()));
+            }
+        world()->playSound(SOUND_PED_HURT);
+    }
+    if (getHP() <= 0){
+        setDead();
+        world()->playSound(SOUND_PED_DIE);
+        world()->increaseScore(150);
+    }
     return true;
 }
 
@@ -292,6 +305,8 @@ void ZombiePedestrian::doSomething(){
     if (world()->getOverlappingGhostRacer(this)){
         world()->getGhostRacer()->setHP(-5);
         this->setHP(-2);
+        world()->playSound(SOUND_PED_DIE);
+        world()->increaseScore(150);
         return; 
     }
     if (abs(getX() - world()->getGhostRacer()->getX()) < 30 && getY() > world()->getGhostRacer()->getY()){
@@ -307,7 +322,6 @@ void ZombiePedestrian::doSomething(){
         }
         decrementGrunts();
     }
-//    moveAndPossiblyPickPlan();
     double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
     double horiz_speed = getHorizSpeed();
     double new_y = getY() + vert_speed;
@@ -318,16 +332,8 @@ void ZombiePedestrian::doSomething(){
         setDead();
         return;
     }
-    int negative = randInt(-3,-1);
-    int positive = randInt(1,3);
-    setHorizSpeed(randInt(negative, positive));
-    // set length of movement plan to randint [4,32]
-    if (getHorizSpeed() < 0){
-        setDirection(180);
-    }
-    else{
-        setDirection(0); 
-    }
+    moveAndPossiblyPickPlan();
+
 }
 bool ZombiePedestrian::beSprayedIfAppropriate(){
     return true;
@@ -349,23 +355,38 @@ bool ZombiePedestrian::decrementGrunts(){
 }
 
 ZombieCab::ZombieCab(StudentWorld* sw, double x, double y)
-: Agent(sw, IID_ZOMBIE_CAB, x, y, 90, 4.0, 3)
+: Pedestrian(sw, IID_ZOMBIE_CAB, x, y, 4.0)
 {
-    m_hspeed = 0;
+    setHP(3);
+    setDirection(90);
+    m_damage = false;
 }
 ZombieCab::~ZombieCab(){}
-int ZombieCab::getHSpeed(){
-    return m_hspeed;
-}
-void ZombieCab::setHSpeed(int hspeed){
-    m_hspeed = hspeed;
-}
 void ZombieCab::doSomething(){
     if (isDead()){
         return;
     }
+    if (world()->getOverlappingGhostRacer(this))
+    {
+        if (checkDamage()){
+            ;
+        }
+        else{
+            world()->playSound(SOUND_VEHICLE_CRASH);
+            world()->getGhostRacer()->setHP(-20);
+            if (getX() < world()->getGhostRacer()->getX()){
+                setHorizSpeed(-5);
+                setDirection(60-randInt(0, 19));
+            }
+            else if (getX() > world()->getGhostRacer()->getX()){
+                setHorizSpeed(5);
+                setDirection(120 + randInt(0, 19));
+            }
+            doneDamage();
+        }
+    }
     double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
-    double horiz_speed = getHSpeed();
+    double horiz_speed = getHorizSpeed();
     double new_y = getY() + vert_speed;
     double new_x = getX() + horiz_speed;
     moveTo(new_x, new_y);
@@ -374,11 +395,41 @@ void ZombieCab::doSomething(){
         setDead();
         return;
     }
+    if (getVerticalSpeed() > world()->getGhostRacer()->getVerticalSpeed()){
+        setVerticalSpeed(getVerticalSpeed()*0.5);
+    }
+    else{
+        setVerticalSpeed(getVerticalSpeed()*1.5); 
+    }
+    moveAndPossiblyPickPlan();
 }
-
 bool ZombieCab::beSprayedIfAppropriate(){
     return true;
 }
+bool ZombieCab::checkDamage(){
+    return m_damage;
+}
+void ZombieCab::doneDamage(){
+    m_damage = true;
+}
+
+void ZombieCab::moveAndPossiblyPickPlan(){
+    decrementPlan();
+    if (getPlan() > 0){
+        return;
+    }
+//    else{
+//        setPlan(randInt(4,32));
+//        setVerticalSpeed(getVerticalSpeed() + randInt(-2,2));
+//        setHorizSpeed(getVerticalSpeed() + randInt(-2,2));
+//    }
+}
+
+
+
+
+
+
 
 Spray::Spray(StudentWorld* sw, double x, double y, int dir)
 :Actor(sw, IID_HOLY_WATER_PROJECTILE, x, y, dir, 1.0, 1)
