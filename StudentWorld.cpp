@@ -25,6 +25,7 @@ StudentWorld::StudentWorld(string assetPath)
 {
     m_ghostracer = nullptr;
     m_actors.clear();
+    m_souls = 0;
 }
 StudentWorld::~StudentWorld(){
     cleanUp();
@@ -46,34 +47,26 @@ int StudentWorld::init()
 
 int StudentWorld::move()
 {
-    
+    int souls2Save = getLevel() * 2 + 5;
     // add zombiecab algorithm
-    // checking for souls saved to return level-finished
-    
-    int ChanceVehicle = max(100 - getLevel() * 10, 20);
-    int ChanceOilSlick = max(150 - getLevel() * 10, 40);
-    int ChanceZombiePed = max(100 - getLevel() * 10, 20);
-    int ChanceHumanPed = max(200 - getLevel() * 10, 30);
-    int ChanceOfHolyWater = 100 + 10 * getLevel();
-    int ChanceOfLostSoul = 100;
-    
     m_ghostracer->doSomething();
     list<Actor*>::iterator it = m_actors.begin();
-    while (it != m_actors.end()){
-        if (!(*it)->isDead()){
+    for (it = m_actors.begin(); it != m_actors.end(); )
+    {
+        if(!(*it)->isDead())
         (*it)->doSomething();
+            if (m_ghostracer->isDead()){
+                decLives();
+                return GWSTATUS_PLAYER_DIED;
+            }
+            if (getSoulsSaved() == souls2Save){
+                // award bonus points to the player
+                return GWSTATUS_FINISHED_LEVEL;
+            }
         it++;
-        }
-        else{
-            it++;
-        }
     }
-    if (m_ghostracer->isDead()){
-        decLives();
-        return GWSTATUS_PLAYER_DIED;
-    }
-    
     // remove newly dead actors
+    it = m_actors.begin();
     while (it != m_actors.end()){
         if ((*it)->isDead()){
             delete *it;
@@ -100,26 +93,42 @@ int StudentWorld::move()
         lastWhiteY = new_border_y;
     }
     
-    if (randInt(0, ChanceVehicle - 1) == 0){
-        int lane = randInt(0, 2); // 0 is left, 1 is middle, 2 is right lane
-        
-        m_actors.push_back(new ZombieCab(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT));
+    int ChanceVehicle = max(100 - getLevel() * 10, 20);
+    int ChanceOilSlick = max(150 - getLevel() * 10, 40);
+    int ChanceZombiePed = max(100 - getLevel() * 10, 20);
+    int ChanceHumanPed = max(200 - getLevel() * 10, 30);
+    int ChanceOfHolyWater = 100 + 10 * getLevel();
+    int ChanceOfHealing = 100 + 10 * getLevel();
+    int ChanceOfLostSoul = 100;
+    
+//    if (randInt(0, ChanceVehicle - 1) == 0){
+//        ZombieCab* zombiecab = new ZombieCab(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
+//        addActor(zombiecab);
+//    }
+    if (randInt(0, ChanceOilSlick - 1) == 0){
+        OilSlick* oilslick = new OilSlick(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
+        addActor(oilslick);
+    }
+//    if (randInt(0, ChanceZombiePed - 1) == 0){
+//        ZombiePedestrian* zombieped = new ZombiePedestrian(this, randInt(0, VIEW_WIDTH), VIEW_HEIGHT);
+//        addActor(zombieped);
+//    }
+//    if (randInt(0, ChanceHumanPed - 1) == 0){
+//        HumanPedestrian* humanped = new HumanPedestrian(this, randInt(0, VIEW_WIDTH), VIEW_HEIGHT);
+//        addActor(humanped);
+//    }
+    if (randInt(0, ChanceOfHolyWater - 1) == 0){
+       HolyWaterGoodie* holywatergoodie = new HolyWaterGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
+        addActor(holywatergoodie);
+    }
+    if (randInt(0, ChanceOfHealing - 1) == 0){
+       HealingGoodie* healinggoodie = new HealingGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
+        addActor(healinggoodie);
     }
     
-    if (randInt(0, ChanceOilSlick - 1) == 0){
-        m_actors.push_back(new OilSlick(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT));
-    }
-    if (randInt(0, ChanceZombiePed - 1) == 0){
-        m_actors.push_back(new ZombiePedestrian(this, randInt(0, VIEW_WIDTH), VIEW_HEIGHT));
-    }
-    if (randInt(0, ChanceHumanPed - 1) == 0){
-        m_actors.push_back(new HumanPedestrian(this, randInt(0, VIEW_WIDTH), VIEW_HEIGHT));
-    }
-    if (randInt(0, ChanceOfHolyWater - 1) == 0){
-        m_actors.push_back(new HolyWaterGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT));
-    }
     if (randInt(0, ChanceOfLostSoul - 1) == 0){
-        m_actors.push_back(new SoulGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT));
+        SoulGoodie* soulgoodie = new SoulGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
+        addActor(soulgoodie);
     }
     
     // update text
@@ -127,6 +136,11 @@ int StudentWorld::move()
         score  << "Score: " << getScore() << "  Lvl: " << getLevel() << "  Souls2Save: " << getLevel() * 2 + 5 << "  Lives: "<< getLives() << "  Health: " << m_ghostracer->getHP() << "  Sprays: " << m_ghostracer->getNumSprays() << "  Bonus: 5000";
         setGameStatText(score.str());
     // continue playing
+    if (m_ghostracer->isDead()){
+        decLives();
+        return GWSTATUS_PLAYER_DIED;
+    }
+    else
     return GWSTATUS_CONTINUE_GAME;
 }
 
@@ -143,4 +157,48 @@ void StudentWorld::cleanUp()
 
 GhostRacer* StudentWorld::getGhostRacer(){
     return m_ghostracer;
+}
+
+void StudentWorld::addActor(Actor* a){
+    m_actors.push_back(a);
+}
+
+void StudentWorld::recordSoulSaved(){
+    m_souls++;
+}
+int StudentWorld::getSoulsSaved(){
+    return m_souls;
+}
+
+
+bool StudentWorld::sprayFirstAppropriateActor(Actor *a){
+    if (a->beSprayedIfAppropriate()){
+        return true;
+    }
+    else{
+        return false;
+    }
+}
+bool StudentWorld::overlaps(const Actor *a1, const Actor *a2) const{
+    double delta_x = abs(a1->getX() - a2->getX());
+    double delta_y = abs(a1->getY() - a2->getY());
+    double radiussum = a1->getRadius() + a2->getRadius();
+    if (delta_x < radiussum*0.25 && delta_y < radiussum*0.6){
+        return true;
+    }
+    return false;
+}
+bool StudentWorld::getOverlappingGhostRacer(Actor *a) const{
+    double delta_x = abs(a->getX() - m_ghostracer->getX());
+    double delta_y = abs(a->getY() - m_ghostracer->getY());
+    double radiussum = a->getRadius() + m_ghostracer->getRadius();
+    if (delta_x < radiussum*0.25 && delta_y < radiussum*0.6){
+        return true;
+    }
+    return false;
+}
+
+void StudentWorld::makeSpray(){
+    Spray* newspray = new Spray(this, m_ghostracer->getX(), m_ghostracer->getY() + SPRITE_HEIGHT, m_ghostracer->getDirection());
+    m_actors.push_front(newspray);
 }

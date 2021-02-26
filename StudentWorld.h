@@ -34,6 +34,10 @@ public:
 
       // Record that a soul was saved.
     void recordSoulSaved();
+    
+    int getSoulsSaved(); 
+    
+    void makeSpray(); 
 
       // If actor a overlaps some live actor that is affected by a holy water
       // projectile, inflict a holy water spray on that actor and return true;
@@ -45,10 +49,11 @@ public:
 
       // If actor a overlaps this world's GhostRacer, return a pointer to the
       // GhostRacer; otherwise, return nullptr
-    GhostRacer* getOverlappingGhostRacer(Actor* a) const;
+    bool getOverlappingGhostRacer(Actor* a) const;
 private:
     GhostRacer* m_ghostracer;
     std::list<Actor*> m_actors;
+    int m_souls;
 };
 
 #endif // STUDENTWORLD_INCLUDED
