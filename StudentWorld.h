@@ -25,6 +25,7 @@ public:
     virtual int init();
     virtual int move();
     virtual void cleanUp();
+    
 
       // Return a pointer to the world's GhostRacer.
     GhostRacer* getGhostRacer();
@@ -37,7 +38,8 @@ public:
     
     int getSoulsSaved(); 
     
-    void makeSpray(); 
+    void makeSpray();
+    
 
       // If actor a overlaps some live actor that is affected by a holy water
       // projectile, inflict a holy water spray on that actor and return true;

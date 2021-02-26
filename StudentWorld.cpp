@@ -53,8 +53,11 @@ int StudentWorld::move()
     list<Actor*>::iterator it = m_actors.begin();
     for (it = m_actors.begin(); it != m_actors.end(); )
     {
+        int lives = getLives();
         if(!(*it)->isDead())
+        {
         (*it)->doSomething();
+        }
             if (m_ghostracer->isDead()){
                 decLives();
                 return GWSTATUS_PLAYER_DIED;
@@ -78,7 +81,6 @@ int StudentWorld::move()
             it++;
         }
     }
-    
     // add new actors
     lastWhiteY += (-4 - m_ghostracer->getVerticalSpeed());
     int delta_y = new_border_y - lastWhiteY;
@@ -92,7 +94,6 @@ int StudentWorld::move()
         m_actors.push_back(new BorderLine(this, ROAD_CENTER + ROAD_WIDTH / 2 - ROAD_WIDTH/3, new_border_y, false));
         lastWhiteY = new_border_y;
     }
-    
     int ChanceVehicle = max(100 - getLevel() * 10, 20);
     int ChanceOilSlick = max(150 - getLevel() * 10, 40);
     int ChanceZombiePed = max(100 - getLevel() * 10, 20);
@@ -100,40 +101,37 @@ int StudentWorld::move()
     int ChanceOfHolyWater = 100 + 10 * getLevel();
     int ChanceOfHealing = 100 + 10 * getLevel();
     int ChanceOfLostSoul = 100;
-    
-//    if (randInt(0, ChanceVehicle - 1) == 0){
-//        ZombieCab* zombiecab = new ZombieCab(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
-//        addActor(zombiecab);
-//    }
+    if (randInt(0, ChanceVehicle - 1) == 0){
+        ZombieCab* zombiecab = new ZombieCab(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
+        addActor(zombiecab);
+    }
     if (randInt(0, ChanceOilSlick - 1) == 0){
         OilSlick* oilslick = new OilSlick(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
         addActor(oilslick);
     }
-//    if (randInt(0, ChanceZombiePed - 1) == 0){
-//        ZombiePedestrian* zombieped = new ZombiePedestrian(this, randInt(0, VIEW_WIDTH), VIEW_HEIGHT);
-//        addActor(zombieped);
-//    }
-//    if (randInt(0, ChanceHumanPed - 1) == 0){
-//        HumanPedestrian* humanped = new HumanPedestrian(this, randInt(0, VIEW_WIDTH), VIEW_HEIGHT);
-//        addActor(humanped);
-//    }
+    if (randInt(0, ChanceZombiePed - 1) == 0){
+        ZombiePedestrian* zombieped = new ZombiePedestrian(this, randInt(0, VIEW_WIDTH), VIEW_HEIGHT);
+        addActor(zombieped);
+    }
+    if (randInt(0, ChanceHumanPed - 1) == 0){
+        HumanPedestrian* humanped = new HumanPedestrian(this, randInt(0, VIEW_WIDTH), VIEW_HEIGHT);
+        addActor(humanped);
+    }
     if (randInt(0, ChanceOfHolyWater - 1) == 0){
        HolyWaterGoodie* holywatergoodie = new HolyWaterGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
         addActor(holywatergoodie);
     }
-    if (randInt(0, ChanceOfHealing - 1) == 0){
-       HealingGoodie* healinggoodie = new HealingGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
-        addActor(healinggoodie);
-    }
-    
+//    if (randInt(0, ChanceOfHealing - 1) == 0){
+//       HealingGoodie* healinggoodie = new HealingGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
+//        addActor(healinggoodie);
+//    }
     if (randInt(0, ChanceOfLostSoul - 1) == 0){
         SoulGoodie* soulgoodie = new SoulGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
         addActor(soulgoodie);
     }
-    
     // update text
     ostringstream score;
-        score  << "Score: " << getScore() << "  Lvl: " << getLevel() << "  Souls2Save: " << getLevel() * 2 + 5 << "  Lives: "<< getLives() << "  Health: " << m_ghostracer->getHP() << "  Sprays: " << m_ghostracer->getNumSprays() << "  Bonus: 5000";
+        score  << "Score: " << getScore() << "  Lvl: " << getLevel() << "  Souls2Save: " << (getLevel() * 2 + 5) - getSoulsSaved() << "  Lives: "<< getLives() << "  Health: " << m_ghostracer->getHP() << "  Sprays: " << m_ghostracer->getNumSprays() << "  Bonus: 5000";
         setGameStatText(score.str());
     // continue playing
     if (m_ghostracer->isDead()){
@@ -202,3 +200,4 @@ void StudentWorld::makeSpray(){
     Spray* newspray = new Spray(this, m_ghostracer->getX(), m_ghostracer->getY() + SPRITE_HEIGHT, m_ghostracer->getDirection());
     m_actors.push_front(newspray);
 }
+

@@ -14,37 +14,28 @@ Actor::Actor(StudentWorld* sw, int imageID, double x, double y, int dir = 0, dou
     m_world = sw;
     m_vspeed = 0;
 }
-Actor::~Actor(){
-    
-}
+Actor::~Actor(){}
 bool Actor::isDead() const{
     return m_dead;
 }
-
 void Actor::setDead(){
     m_dead = true;
 }
-
 StudentWorld* Actor::world() const{
     return m_world;
 }
-
 double Actor::getVerticalSpeed() const{
     return m_vspeed;
 }
-
 void Actor::setVerticalSpeed(double speed){
     m_vspeed = speed;
 }
-
 bool Actor::beSprayedIfAppropriate(){
     return false;
 }
-
 bool Actor::isCollisionAvoidanceWorthy() const{
     return true;
 }
-
 bool Actor::moveRelativeToGhostRacerVerticalSpeed(double dx){
     double vert_speed = getVerticalSpeed() - world() ->getGhostRacer()->getVerticalSpeed();
     double new_y = getY() + vert_speed;
@@ -90,15 +81,16 @@ Agent::~Agent(){}
 bool Agent::isCollisionAvoidanceWorthy() const{
     return true;
 }
-
 int Agent::getHP() const{
     return m_hp;
 }
 void Agent::setHP(int hp){
     if (m_hp + hp <= 100)
     m_hp += hp;
+    if(getHP() <= 0){
+        setDead();
+    }
 }
-
 bool Agent::takeDamageAndPossiblyDie(int hp){
     if (getHP() <= 0){
         setDead();
@@ -110,7 +102,6 @@ bool Agent::takeDamageAndPossiblyDie(int hp){
         return false;
     }
 }
-
 int Agent::soundWhenHurt(){
     return SOUND_NONE;
 }
@@ -128,6 +119,7 @@ void GhostRacer::doSomething(){
     if (isDead()){
         return;
     }
+    drive();
     if (this->getX() <= LEFT_EDGE && getDirection() > 90){
         setHP(-10);
         setDirection(82);
@@ -156,7 +148,6 @@ void GhostRacer::doSomething(){
                 if (getDirection() < 114){
                     setDirection(getDirection() + 8);
                 }
-                drive();
                 break;
             }
             case KEY_PRESS_RIGHT:
@@ -164,40 +155,32 @@ void GhostRacer::doSomething(){
                 if (getDirection() > 66){
                     setDirection(getDirection() - 8);
                 }
-                drive();
                 break;
             }
             case KEY_PRESS_UP:
             {
                 if (getVerticalSpeed() < 5)
                 {setVerticalSpeed(getVerticalSpeed() + 1);}
-                drive();
                 break;
             }
             case KEY_PRESS_DOWN:
             {
                 if (getVerticalSpeed() > 1)
                 {setVerticalSpeed(getVerticalSpeed() - 1);}
-                drive();
                 break;
             }
             case KEY_PRESS_SPACE:
             {
                 if (m_sprays > 0){
+                    world()->addActor(new Spray(world(), SPRITE_HEIGHT * cos(getDirection() * PI/180) + getX(), SPRITE_HEIGHT * sin(getDirection() * PI/180) + getY(), getDirection()));
                     world()->playSound(SOUND_PLAYER_SPRAY);
                     m_sprays--;
                 }
-                
-                /*
-                 Add a new holy water spray object SPRITE_HEIGHT pixels
-                 directly in front of the Ghost Racer (in the same direction Ghost Racer is facing) into their StudentWorld object. Hint: The cos() and sin() functions can be used to determine the proper delta_x and delta_y in front of Ghost Racer where to place the new holy water projectile.
-                 */
             }
             default:
-                drive();
                 break;
         }
-}
+    }
 }
 int GhostRacer::soundWhenDie() const{
     return SOUND_PLAYER_DIE;
@@ -208,7 +191,6 @@ int GhostRacer::getNumSprays() const{
 void GhostRacer::increaseSprays(int amt){
     m_sprays += amt;
 }
-
 void GhostRacer::spin(){
     int currDirection = getDirection();
     int change = randInt(5, 20);
@@ -229,7 +211,6 @@ Pedestrian::Pedestrian(StudentWorld* sw, int imageID, double x, double y, double
     m_hspeed = 0;
     setVerticalSpeed(-4);
     setHP(2);
-    
 }
 Pedestrian::~Pedestrian(){}
 
@@ -239,14 +220,12 @@ int Pedestrian::soundWhenHurt() const{
 int Pedestrian::soundWhenDie() const{
     return SOUND_PED_DIE;
 }
-
 int Pedestrian::getHorizSpeed() const{
     return m_hspeed;
 }
 void Pedestrian::setHorizSpeed(int hspeed){
     m_hspeed = hspeed;
 }
-
 void Pedestrian::moveAndPossiblyPickPlan(){
 }
 
@@ -259,9 +238,11 @@ void HumanPedestrian::doSomething(){
     if (isDead()){
         return;
     }
-    /*
-     if the human pedestrian overlaps with the Ghost Racer, then the player loses a life and the level ends (you must communicate this somehow to your StudentWorld). The human pedestrian’s doSomething() method must then immediately return.
-     */
+    if (world()->getOverlappingGhostRacer(this)){
+        setDead();
+        world()->getGhostRacer()->setDead();
+        return;
+    }
     else{
 //    moveAndPossiblyPickPlan();
         double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
@@ -308,16 +289,12 @@ void ZombiePedestrian::doSomething(){
     if (isDead()){
         return;
     }
-    /*
-     If the zombie pedestrian overlaps with the Ghost Racer:
-     a. The Ghost Racer must receive 5 points of damage.
-     b. The zombie pedestrian will be damaged6 with 2 hit points of damage. See
-     the Other Circumstances section below for what it means to damage a
-     zombie pedestrian.
-     c. The zombie pedestrian must immediately return and do nothing else.
-     */
-    
-    if (abs(getX() - world()->getGhostRacer()->getX()) < 30){
+    if (world()->getOverlappingGhostRacer(this)){
+        world()->getGhostRacer()->setHP(-5);
+        this->setHP(-2);
+        return; 
+    }
+    if (abs(getX() - world()->getGhostRacer()->getX()) < 30 && getY() > world()->getGhostRacer()->getY()){
         setDirection(270);
         if (getX() > world()->getGhostRacer()->getX()){
             setHorizSpeed(1);
@@ -328,6 +305,7 @@ void ZombiePedestrian::doSomething(){
         else{
             setHorizSpeed(0);
         }
+        decrementGrunts();
     }
 //    moveAndPossiblyPickPlan();
     double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
@@ -340,8 +318,16 @@ void ZombiePedestrian::doSomething(){
         setDead();
         return;
     }
-    decrementGrunts(); 
-
+    int negative = randInt(-3,-1);
+    int positive = randInt(1,3);
+    setHorizSpeed(randInt(negative, positive));
+    // set length of movement plan to randint [4,32]
+    if (getHorizSpeed() < 0){
+        setDirection(180);
+    }
+    else{
+        setDirection(0); 
+    }
 }
 bool ZombiePedestrian::beSprayedIfAppropriate(){
     return true;
@@ -388,7 +374,6 @@ void ZombieCab::doSomething(){
         setDead();
         return;
     }
-
 }
 
 bool ZombieCab::beSprayedIfAppropriate(){
@@ -467,7 +452,6 @@ OilSlick::~OilSlick(){}
 void OilSlick::doSomething(){
     move();
     if (world()->getOverlappingGhostRacer(this)){
-        world()->getGhostRacer()->setHP(-10);
         setDead();
         world()->playSound(SOUND_OIL_SLICK);
         doActivity(world()->getGhostRacer());
@@ -476,9 +460,9 @@ void OilSlick::doSomething(){
 void OilSlick::doActivity(GhostRacer *gr){
     gr->spin();
 }
-//int OilSlick::getScoreIncrease() const{
-//    return 1;
-//}
+int OilSlick::getScoreIncrease() const{
+    return 1;
+}
 int OilSlick::getSound() const{
     return SOUND_OIL_SLICK;
 }
