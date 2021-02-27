@@ -346,6 +346,7 @@ bool ZombiePedestrian::decrementGrunts(){
         return false;
     }
 }
+// take damage function for zombie ped
 
 ZombieCab::ZombieCab(StudentWorld* sw, double x, double y)
 : Pedestrian(sw, IID_ZOMBIE_CAB, x, y, 4.0)
@@ -396,7 +397,6 @@ bool ZombieCab::checkDamage(){
 void ZombieCab::doneDamage(){
     m_damage = true;
 }
-
 void ZombieCab::moveAndPossiblyPickPlan(){
     decrementPlan();
     if (getPlan() > 0){
@@ -407,6 +407,22 @@ void ZombieCab::moveAndPossiblyPickPlan(){
         setVerticalSpeed(getVerticalSpeed() + randInt(-2,2));
     }
 }
+// take damage function + also add for zombie pedestrian
+//void ZombieCab::getSprayed(){
+//    takeDamageAndPossiblyDie(-20);
+//    if (isDead()){
+//        world()->playSound(SOUND_VEHICLE_DIE);
+//        if (randInt(1,5) == 1){
+//            OilSlick* oilslick = new OilSlick(world(), getX(), getY());
+//            world()->addActor(oilslick);
+//        }
+//        world()->increaseScore(200);
+//        return;
+//    }
+//    else{
+//        world()->playSound(SOUND_VEHICLE_HURT);
+//    }
+//}
 
 Spray::Spray(StudentWorld* sw, double x, double y, int dir)
 :Actor(sw, IID_HOLY_WATER_PROJECTILE, x, y, dir, 1.0, 1)
@@ -500,14 +516,11 @@ bool OilSlick::selfDestructs() const{
     return false;
 }
 
-
 HealingGoodie::HealingGoodie(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_HEAL_GOODIE, x, y, 0, 1.0, 2)
 {}
 HealingGoodie::~HealingGoodie(){}
 void HealingGoodie::doSomething(){
-    // can be destroyed if overlaps with holy water projectile, will destroy it
-    
     move();
     if (world()->getOverlappingGhostRacer(this)){
         world()->getGhostRacer()->setHP(10);
@@ -530,14 +543,12 @@ bool HealingGoodie::beSprayedIfAppropriate() {
     return true;
 }
 
-
 HolyWaterGoodie::HolyWaterGoodie(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_HOLY_WATER_GOODIE, x, y, 0, 2.0, 2)
 {}
 
 HolyWaterGoodie::~HolyWaterGoodie(){}
 void HolyWaterGoodie::doSomething(){
-    // can be destroyed if overlaps with holy water projectile, will destroy it
     move();
     if (world()->getOverlappingGhostRacer(this)){
         setDead();

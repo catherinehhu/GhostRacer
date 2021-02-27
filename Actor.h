@@ -2,7 +2,6 @@
 #define ACTOR_INCLUDED
 
 #include "GraphObject.h"
-
 class StudentWorld;
 
 class Actor : public GraphObject
@@ -117,6 +116,7 @@ public:
     bool checkDamage();
     void doneDamage();
     virtual void moveAndPossiblyPickPlan();
+    // take damage function
     virtual ~ZombieCab();
 private:
     bool m_damage;
@@ -140,12 +140,9 @@ class GhostRacerActivatedObject : public Actor
 public:
     GhostRacerActivatedObject(StudentWorld* sw, int imageID, double x, double y, int dir, double size, int depth);
     virtual bool beSprayedIfAppropriate();
-      // Do the object's special activity (increase health, spin Ghostracer, etc.)
     virtual void doActivity(GhostRacer* gr) = 0;
-      // Return the object's increase to the score when activated.
     virtual int getScoreIncrease() const = 0;
     virtual int getSound() const;
-      // Return whether the object dies after activation.
     virtual bool selfDestructs() const = 0;
     virtual bool isCollisionAvoidanceWorthy() const;
     virtual void getSprayed();

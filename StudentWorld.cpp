@@ -12,14 +12,10 @@ const double LEFT_EDGE = ROAD_CENTER - ROAD_WIDTH/2;
 const double RIGHT_EDGE = ROAD_CENTER + ROAD_WIDTH/2;
 const int new_border_y = VIEW_HEIGHT - SPRITE_HEIGHT;
 
-
 GameWorld* createStudentWorld(string assetPath)
 {
 	return new StudentWorld(assetPath);
 }
-
-// Students:  Add code to this file, StudentWorld.h, Actor.h, and Actor.cpp
-
 StudentWorld::StudentWorld(string assetPath)
 : GameWorld(assetPath)
 {
@@ -29,11 +25,11 @@ StudentWorld::StudentWorld(string assetPath)
 StudentWorld::~StudentWorld(){
     cleanUp();
 }
-
 int StudentWorld::init()
 {
     m_souls2save = getLevel() * 2 + 5;
     m_lastWhiteY = 0;
+    m_bonus = 5000;
     m_ghostracer = new GhostRacer(this, 128, 32);
     for (int j = 0; j < N; j++){
         m_actors.push_back(new BorderLine(this, LEFT_EDGE, j * SPRITE_HEIGHT, true));
@@ -45,10 +41,8 @@ int StudentWorld::init()
     }
     return GWSTATUS_CONTINUE_GAME;
 }
-
 int StudentWorld::move()
 {
-    // add zombiecab algorithm
     m_ghostracer->doSomething();
     list<Actor*>::iterator it = m_actors.begin();
     for (it = m_actors.begin(); it != m_actors.end(); )
@@ -62,12 +56,11 @@ int StudentWorld::move()
                 return GWSTATUS_PLAYER_DIED;
             }
             if (getSoulsLeft() == 0){
-                // award bonus points to the player
+                increaseScore(getBonus());
                 return GWSTATUS_FINISHED_LEVEL;
             }
         it++;
     }
-    
     // add new actors
     m_lastWhiteY += (-4 - m_ghostracer->getVerticalSpeed());
     int delta_y = new_border_y - m_lastWhiteY;
@@ -117,16 +110,18 @@ int StudentWorld::move()
         addActor(humanped);
     }
     if (randInt(0, ChanceOfHolyWater - 1) == 0){
-       HolyWaterGoodie* holywatergoodie = new HolyWaterGoodie(this, 128, VIEW_HEIGHT);
+       HolyWaterGoodie* holywatergoodie = new HolyWaterGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
         addActor(holywatergoodie);
     }
     if (randInt(0, ChanceOfLostSoul - 1) == 0){
         SoulGoodie* soulgoodie = new SoulGoodie(this, randInt(LEFT_EDGE, RIGHT_EDGE), VIEW_HEIGHT);
         addActor(soulgoodie);
     }
+    decrementBonus();
+    
     // update text
     ostringstream score;
-        score  << "Score: " << getScore() << "  Lvl: " << getLevel() << "  Souls2Save: " << getSoulsLeft() << "  Lives: "<< getLives() << "  Health: " << m_ghostracer->getHP() << "  Sprays: " << m_ghostracer->getNumSprays() << "  Bonus: 5000";
+        score  << "Score: " << getScore() << "  Lvl: " << getLevel() << "  Souls2Save: " << getSoulsLeft() << "  Lives: "<< getLives() << "  Health: " << m_ghostracer->getHP() << "  Sprays: " << m_ghostracer->getNumSprays() << "  Bonus:  " << getBonus();
         setGameStatText(score.str());
     // continue playing
     if (m_ghostracer->isDead()){
@@ -185,7 +180,6 @@ bool StudentWorld::sprayOverlap(const Actor* spray) {
     }
     return false;
 }
-
 double StudentWorld::checkCollision(const Actor *actor){
     list<Actor*>::iterator it;
     for (it = m_actors.begin(); it != m_actors.end(); it++) {
@@ -200,7 +194,6 @@ double StudentWorld::checkCollision(const Actor *actor){
     }
     return 1;
 }
-
 void StudentWorld::createZombieCab(){
     int cur_lane = randInt(0,2);
     int remainder = cur_lane % 3;
@@ -259,3 +252,10 @@ void StudentWorld::createZombieCab(){
     addActor(zombiecab);
     zombiecab->setVerticalSpeed(speed);
     }
+
+void StudentWorld::decrementBonus(){
+    m_bonus--;
+}
+int StudentWorld::getBonus(){
+    return m_bonus;
+}

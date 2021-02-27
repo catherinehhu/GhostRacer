@@ -37,14 +37,16 @@ public:
     bool getOverlappingGhostRacer(Actor* a) const;
     bool sprayOverlap(const Actor *spray);
     double checkCollision(const Actor *actor);
-    void createZombieCab(); 
+    void createZombieCab();
+    void decrementBonus();
+    int getBonus();
     
-
 private:
     GhostRacer* m_ghostracer;
     std::list<Actor*> m_actors;
     int m_souls2save;
     int m_lastWhiteY;
+    int m_bonus;
 };
 
 #endif // STUDENTWORLD_INCLUDED
