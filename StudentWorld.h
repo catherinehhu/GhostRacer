@@ -1,11 +1,3 @@
-// A possible interface for StudentWorld.  You may use all, some, or none
-// of this, as you wish.
-
-// One of the design goals is to reduce the coupling between StudentWorld.h
-// and Actor.h as much as possible.  Notice that in fact, StudentWorld.h
-// does not need to include Actor.h at all, and knows only two names in the
-// Actor hierarchy.
-
 #ifndef STUDENTWORLD_INCLUDED
 #define STUDENTWORLD_INCLUDED
 

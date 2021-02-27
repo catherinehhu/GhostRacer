@@ -32,7 +32,11 @@ bool Actor::isCollisionAvoidanceWorthy() const{
     return true;
 }
 void Actor::getSprayed(){
-    return;
+    if (beSprayedIfAppropriate()){
+        return;
+    }else {
+        return;
+    }
 }
 bool Actor::beSprayedIfAppropriate() {
     return false;
@@ -79,11 +83,8 @@ void Agent::setHP(int hp){
     }
 }
 void Agent::getSprayed(){
-    if (beSprayedIfAppropriate()){
-        takeDamageAndPossiblyDie(-1);
-    }
+    return;
 }
-
 bool Agent::takeDamageAndPossiblyDie(int hp){
     setHP(hp);
     if (getHP() <= 0){
@@ -102,7 +103,6 @@ int Agent::soundWhenHurt(){
 int Agent::soundWhenDie(){
     return SOUND_NONE;
 }
-
 GhostRacer::GhostRacer(StudentWorld* sw, double x, double y)
 :Agent(sw, IID_GHOST_RACER, x, y, 90, 4.0, 100)
 {
@@ -261,7 +261,6 @@ void Pedestrian::move(){
         return;
     }
 }
-
 HumanPedestrian::HumanPedestrian(StudentWorld* sw, double x, double y)
 : Pedestrian(sw, IID_HUMAN_PED, x, y, 2.0)
 {
@@ -282,18 +281,20 @@ void HumanPedestrian::doSomething(){
     moveAndPossiblyPickPlan();
 }
 bool HumanPedestrian::beSprayedIfAppropriate(){
+    return true;
+}
+void HumanPedestrian::getSprayed(){
+    takeDamageAndPossiblyDie(0);
+}
+bool HumanPedestrian::takeDamageAndPossiblyDie(int hp){
     int currDirection = getDirection();
     int currHSpeed = getHorizSpeed();
     setDirection(currDirection * -1);
     setHorizSpeed(currHSpeed * -1);
-    world()->playSound(SOUND_PED_HURT);
-    return false;
-}
-bool HumanPedestrian::takeDamageAndPossiblyDie(int hp){
-    setHP(0);
+    world()->playSound(SOUND_PED_DIE);
+    setHP(hp);
     return true;
 }
-
 ZombiePedestrian::ZombiePedestrian(StudentWorld* sw, double x, double y)
 : Pedestrian(sw, IID_ZOMBIE_PED, x, y, 3.0)
 {
@@ -306,8 +307,7 @@ void ZombiePedestrian::doSomething(){
     }
     if (world()->getOverlappingGhostRacer(this)){
         world()->getGhostRacer()->setHP(-5);
-        this->setHP(-2);
-        world()->playSound(SOUND_PED_DIE);
+        takeDamageAndPossiblyDie(-2);
         world()->increaseScore(150);
         return; 
     }
@@ -326,10 +326,28 @@ void ZombiePedestrian::doSomething(){
     }
     move();
     moveAndPossiblyPickPlan();
-
 }
 bool ZombiePedestrian::beSprayedIfAppropriate(){
     return true;
+}
+void ZombiePedestrian::getSprayed(){
+    takeDamageAndPossiblyDie(-1);
+}
+bool ZombiePedestrian::takeDamageAndPossiblyDie(int hp){
+    setHP(hp);
+    if (isDead()){
+        world()->playSound(SOUND_PED_DIE);
+                if (randInt(1,5) == 1){
+                    HealingGoodie* healinggoodie = new HealingGoodie(world(), getX(), getY());
+                    world()->addActor(healinggoodie);
+                }
+                world()->increaseScore(200);
+        return true;
+            }
+    else{
+        world()->playSound(SOUND_PED_HURT);
+        return false;
+    }
 }
 int ZombiePedestrian::getGrunts(){
     return m_grunts;
@@ -346,8 +364,6 @@ bool ZombiePedestrian::decrementGrunts(){
         return false;
     }
 }
-// take damage function for zombie ped
-
 ZombieCab::ZombieCab(StudentWorld* sw, double x, double y)
 : Pedestrian(sw, IID_ZOMBIE_CAB, x, y, 4.0)
 {
@@ -369,6 +385,7 @@ void ZombieCab::doSomething(){
         else{
             world()->playSound(SOUND_VEHICLE_CRASH);
             world()->getGhostRacer()->setHP(-20);
+            takeDamageAndPossiblyDie(0); 
             if (getX() <= world()->getGhostRacer()->getX()){
                 setHorizSpeed(-5);
                 setDirection(120 + randInt(0, 19));
@@ -407,22 +424,31 @@ void ZombieCab::moveAndPossiblyPickPlan(){
         setVerticalSpeed(getVerticalSpeed() + randInt(-2,2));
     }
 }
-// take damage function + also add for zombie pedestrian
-//void ZombieCab::getSprayed(){
-//    takeDamageAndPossiblyDie(-20);
-//    if (isDead()){
-//        world()->playSound(SOUND_VEHICLE_DIE);
-//        if (randInt(1,5) == 1){
-//            OilSlick* oilslick = new OilSlick(world(), getX(), getY());
-//            world()->addActor(oilslick);
-//        }
-//        world()->increaseScore(200);
-//        return;
-//    }
-//    else{
-//        world()->playSound(SOUND_VEHICLE_HURT);
-//    }
-//}
+bool ZombieCab::beSprayedIfAppropriate(){
+    return true;
+    }
+void ZombieCab::getSprayed(){
+        takeDamageAndPossiblyDie(-1);
+}
+bool ZombieCab::takeDamageAndPossiblyDie(int hp){
+    setHP(hp);
+    if (isDead()){
+        world()->playSound(SOUND_VEHICLE_DIE);
+                if (randInt(1,5) == 1){
+                    OilSlick* oilslick = new OilSlick(world(), getX(), getY());
+                    world()->addActor(oilslick);
+                }
+                world()->increaseScore(200);
+                return true;
+            }
+    else{
+        world()->playSound(SOUND_VEHICLE_HURT);
+        return false;
+    }
+}
+
+
+
 
 Spray::Spray(StudentWorld* sw, double x, double y, int dir)
 :Actor(sw, IID_HOLY_WATER_PROJECTILE, x, y, dir, 1.0, 1)
@@ -515,7 +541,6 @@ int OilSlick::getSound() const{
 bool OilSlick::selfDestructs() const{
     return false;
 }
-
 HealingGoodie::HealingGoodie(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_HEAL_GOODIE, x, y, 0, 1.0, 2)
 {}
@@ -542,11 +567,11 @@ bool HealingGoodie::selfDestructs() const{
 bool HealingGoodie::beSprayedIfAppropriate() {
     return true;
 }
-
 HolyWaterGoodie::HolyWaterGoodie(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_HOLY_WATER_GOODIE, x, y, 0, 2.0, 2)
-{}
-
+{
+    setDirection(90); 
+}
 HolyWaterGoodie::~HolyWaterGoodie(){}
 void HolyWaterGoodie::doSomething(){
     move();
@@ -567,7 +592,6 @@ bool HolyWaterGoodie::selfDestructs() const{
 bool HolyWaterGoodie::beSprayedIfAppropriate() {
     return true;
 }
-
 SoulGoodie::SoulGoodie(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_SOUL_GOODIE, x, y, 0, 4.0, 2)
 {}

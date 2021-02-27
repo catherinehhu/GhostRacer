@@ -40,8 +40,6 @@ public:
     virtual bool isCollisionAvoidanceWorthy() const;
     int getHP() const;
     void setHP(int hp);
-      // Do what the spec says happens when hp units of damage is inflicted.
-      // Return true if this agent dies as a result, otherwise false.
     virtual bool takeDamageAndPossiblyDie(int hp);
     virtual void getSprayed();
     virtual int soundWhenHurt();
@@ -91,6 +89,7 @@ public:
     HumanPedestrian(StudentWorld* sw, double x, double y);
     virtual void doSomething();
     virtual bool beSprayedIfAppropriate();
+    virtual void getSprayed();
     virtual bool takeDamageAndPossiblyDie(int hp);
     virtual ~HumanPedestrian();
 };
@@ -101,7 +100,9 @@ public:
     ZombiePedestrian(StudentWorld* sw, double x, double y);
     virtual void doSomething();
     virtual bool beSprayedIfAppropriate();
+    virtual bool takeDamageAndPossiblyDie(int hp);
     virtual ~ZombiePedestrian();
+    virtual void getSprayed();
     int getGrunts();
     bool decrementGrunts();
 private:
@@ -115,8 +116,10 @@ public:
     virtual void doSomething();
     bool checkDamage();
     void doneDamage();
+    virtual void getSprayed();
     virtual void moveAndPossiblyPickPlan();
-    // take damage function
+    virtual bool beSprayedIfAppropriate();
+    virtual bool takeDamageAndPossiblyDie(int hp); 
     virtual ~ZombieCab();
 private:
     bool m_damage;
