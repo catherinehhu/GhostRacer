@@ -26,27 +26,25 @@ public:
     virtual int move();
     virtual void cleanUp();
 
-    GhostRacer* getGhostRacer();
+    GhostRacer* getGhostRacer() const;
     void addActor(Actor* a);
     void recordSoulSaved();
-    int getSoulsSaved();
+    int getSoulsLeft();
     
-      // If actor a overlaps some live actor that is affected by a holy water
-      // projectile, inflict a holy water spray on that actor and return true;
-      // otherwise, return false.  (See Actor::beSprayedIfAppropriate.)
-    bool sprayFirstAppropriateActor(Actor* a);
-
-      // Return true if actor a1 overlaps actor a2, otherwise false.
     bool overlaps(const Actor* a1, const Actor* a2) const;
       // If actor a overlaps this world's GhostRacer, return a pointer to the
       // GhostRacer; otherwise, return nullptr
     bool getOverlappingGhostRacer(Actor* a) const;
-    bool closest(int lane); 
+    bool sprayOverlap(const Actor *spray);
+    double checkCollision(const Actor *actor);
+    void createZombieCab(); 
+    
+
 private:
     GhostRacer* m_ghostracer;
     std::list<Actor*> m_actors;
-    int m_souls;
-    
+    int m_souls2save;
+    int m_lastWhiteY;
 };
 
 #endif // STUDENTWORLD_INCLUDED

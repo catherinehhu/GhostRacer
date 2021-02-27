@@ -28,11 +28,14 @@ double Actor::getVerticalSpeed() const{
 void Actor::setVerticalSpeed(double speed){
     m_vspeed = speed;
 }
-bool Actor::beSprayedIfAppropriate(){
-    return false;
-}
 bool Actor::isCollisionAvoidanceWorthy() const{
     return true;
+}
+void Actor::getSprayed(){
+    return;
+}
+bool Actor::beSprayedIfAppropriate() {
+    return false;
 }
 
 BorderLine::BorderLine(StudentWorld* sw, double x, double y, bool isYellow)
@@ -75,7 +78,14 @@ void Agent::setHP(int hp){
         setDead();
     }
 }
+void Agent::getSprayed(){
+    if (beSprayedIfAppropriate()){
+        takeDamageAndPossiblyDie(-1);
+    }
+}
+
 bool Agent::takeDamageAndPossiblyDie(int hp){
+    setHP(hp);
     if (getHP() <= 0){
         setDead();
         soundWhenDie();
@@ -239,6 +249,18 @@ void Pedestrian::setPlan(int plan){
 int Pedestrian::getPlan(){
     return m_plan;
 }
+void Pedestrian::move(){
+    double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
+    double horiz_speed = getHorizSpeed();
+    double new_y = getY() + vert_speed;
+    double new_x = getX() + horiz_speed;
+    moveTo(new_x, new_y);
+    if (getX() < 0 || getY() < 0 || getX() > VIEW_WIDTH || getY() > VIEW_HEIGHT)
+    {
+        setDead();
+        return;
+    }
+}
 
 HumanPedestrian::HumanPedestrian(StudentWorld* sw, double x, double y)
 : Pedestrian(sw, IID_HUMAN_PED, x, y, 2.0)
@@ -255,16 +277,7 @@ void HumanPedestrian::doSomething(){
         return;
     }
     else{
-        double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
-        double horiz_speed = getHorizSpeed();
-        double new_y = getY() + vert_speed;
-        double new_x = getX() + horiz_speed;
-        moveTo(new_x, new_y);
-        if (getX() < 0 || getY() < 0 || getX() > VIEW_WIDTH || getY() > VIEW_HEIGHT)
-        {
-            setDead();
-            return;
-        }
+        move();
     }
     moveAndPossiblyPickPlan();
 }
@@ -274,21 +287,10 @@ bool HumanPedestrian::beSprayedIfAppropriate(){
     setDirection(currDirection * -1);
     setHorizSpeed(currHSpeed * -1);
     world()->playSound(SOUND_PED_HURT);
-    return true;
+    return false;
 }
 bool HumanPedestrian::takeDamageAndPossiblyDie(int hp){
-    setHP(hp);
-    if (getHP() > 0 && getHP() < 2){
-            if (randInt(1,5) == 5){
-                world()->addActor(new HealingGoodie(world(),getX(), getY()));
-            }
-        world()->playSound(SOUND_PED_HURT);
-    }
-    if (getHP() <= 0){
-        setDead();
-        world()->playSound(SOUND_PED_DIE);
-        world()->increaseScore(150);
-    }
+    setHP(0);
     return true;
 }
 
@@ -322,16 +324,7 @@ void ZombiePedestrian::doSomething(){
         }
         decrementGrunts();
     }
-    double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
-    double horiz_speed = getHorizSpeed();
-    double new_y = getY() + vert_speed;
-    double new_x = getX() + horiz_speed;
-    moveTo(new_x, new_y);
-    if (getX() < 0 || getY() < 0 || getX() > VIEW_WIDTH || getY() > VIEW_HEIGHT)
-    {
-        setDead();
-        return;
-    }
+    move();
     moveAndPossiblyPickPlan();
 
 }
@@ -358,6 +351,7 @@ ZombieCab::ZombieCab(StudentWorld* sw, double x, double y)
 : Pedestrian(sw, IID_ZOMBIE_CAB, x, y, 4.0)
 {
     setHP(3);
+    setHorizSpeed(0);
     setDirection(90);
     m_damage = false;
 }
@@ -374,38 +368,28 @@ void ZombieCab::doSomething(){
         else{
             world()->playSound(SOUND_VEHICLE_CRASH);
             world()->getGhostRacer()->setHP(-20);
-            if (getX() < world()->getGhostRacer()->getX()){
+            if (getX() <= world()->getGhostRacer()->getX()){
                 setHorizSpeed(-5);
+                setDirection(120 + randInt(0, 19));
                 setDirection(60-randInt(0, 19));
             }
             else if (getX() > world()->getGhostRacer()->getX()){
                 setHorizSpeed(5);
-                setDirection(120 + randInt(0, 19));
+                setDirection(60-randInt(0, 19));
             }
             doneDamage();
         }
     }
-    double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
-    double horiz_speed = getHorizSpeed();
-    double new_y = getY() + vert_speed;
-    double new_x = getX() + horiz_speed;
-    moveTo(new_x, new_y);
-    if (getX() < 0 || getY() < 0 || getX() > VIEW_WIDTH || getY() > VIEW_HEIGHT)
-    {
-        setDead();
-        return;
-    }
-    if (getVerticalSpeed() > world()->getGhostRacer()->getVerticalSpeed()){
+    move();
+    if (getVerticalSpeed() > world()->getGhostRacer()->getVerticalSpeed() && world()->checkCollision(this) == 0.5){
         setVerticalSpeed(getVerticalSpeed()*0.5);
     }
-    else{
-        setVerticalSpeed(getVerticalSpeed()*1.5); 
+    else if (getVerticalSpeed() <=  world()->getGhostRacer()->getVerticalSpeed() && world()->checkCollision(this) == 1.5){
+        setVerticalSpeed(getVerticalSpeed()*1.5);
     }
     moveAndPossiblyPickPlan();
 }
-bool ZombieCab::beSprayedIfAppropriate(){
-    return true;
-}
+
 bool ZombieCab::checkDamage(){
     return m_damage;
 }
@@ -418,36 +402,26 @@ void ZombieCab::moveAndPossiblyPickPlan(){
     if (getPlan() > 0){
         return;
     }
-//    else{
-//        setPlan(randInt(4,32));
-//        setVerticalSpeed(getVerticalSpeed() + randInt(-2,2));
-//        setHorizSpeed(getVerticalSpeed() + randInt(-2,2));
-//    }
+    else{
+        setPlan(randInt(4,32));
+        setVerticalSpeed(getVerticalSpeed() + randInt(-2,2));
+    }
 }
-
-
-
-
-
-
 
 Spray::Spray(StudentWorld* sw, double x, double y, int dir)
 :Actor(sw, IID_HOLY_WATER_PROJECTILE, x, y, dir, 1.0, 1)
 {
-    m_pixels = 0;
+    m_pixels = 160;
 }
 Spray::~Spray(){}
 void Spray::doSomething(){
     if (isDead()){
         return; 
     }
-    /*
-     Check to see if it has activated. A holy water projectile activates if an object that is affected by projectiles overlaps with it (e.g., zombie peds, zombie cabs, and some types of goodies). If multiple objects overlap with a holy water projectile, then you may pick any one and ignore the others. If the holy water projectile overlaps with an affected object, the holy water spray must:
-     a. Attempt to damage the other object with 1 hit point of damage.
-     b. Set its own status to not-alive, so it will be removed by StudentWorld later
-     in this tick.
-     c. Return immediately.
-     */
+    if (world()->sprayOverlap(this)){
+        setDead();
+        return;
+    }
     moveForward(SPRITE_HEIGHT);
     decrementPixels(SPRITE_HEIGHT);
     if (getX() < 0 || getY() < 0 || getX() > VIEW_WIDTH || getY() > VIEW_HEIGHT)
@@ -455,7 +429,7 @@ void Spray::doSomething(){
         setDead();
         return;
     }
-    if (getPixels() > 160){
+    if (getPixels() <= 0){
         setDead();
         return;
     }
@@ -496,6 +470,11 @@ void GhostRacerActivatedObject::move(){
         return;
     }
 }
+void GhostRacerActivatedObject::getSprayed(){
+    if (beSprayedIfAppropriate() && selfDestructs()){
+        setDead();
+    }
+}
 
 OilSlick::OilSlick(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_OIL_SLICK, x, y, 0, randInt(2, 5), 1) {}
@@ -520,9 +499,7 @@ int OilSlick::getSound() const{
 bool OilSlick::selfDestructs() const{
     return false;
 }
-bool OilSlick::isSprayable() const{
-    return false;
-}
+
 
 HealingGoodie::HealingGoodie(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_HEAL_GOODIE, x, y, 0, 1.0, 2)
@@ -530,6 +507,7 @@ HealingGoodie::HealingGoodie(StudentWorld* sw, double x, double y)
 HealingGoodie::~HealingGoodie(){}
 void HealingGoodie::doSomething(){
     // can be destroyed if overlaps with holy water projectile, will destroy it
+    
     move();
     if (world()->getOverlappingGhostRacer(this)){
         world()->getGhostRacer()->setHP(10);
@@ -548,9 +526,10 @@ int HealingGoodie::getScoreIncrease() const{
 bool HealingGoodie::selfDestructs() const{
     return true;
 }
-bool HealingGoodie::isSprayable() const{
+bool HealingGoodie::beSprayedIfAppropriate() {
     return true;
 }
+
 
 HolyWaterGoodie::HolyWaterGoodie(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_HOLY_WATER_GOODIE, x, y, 0, 2.0, 2)
@@ -574,7 +553,7 @@ int HolyWaterGoodie::getScoreIncrease() const{
 bool HolyWaterGoodie::selfDestructs() const{
     return true;
 }
-bool HolyWaterGoodie::isSprayable() const{
+bool HolyWaterGoodie::beSprayedIfAppropriate() {
     return true;
 }
 
@@ -609,8 +588,5 @@ int SoulGoodie::getSound() const{
     return SOUND_GOT_SOUL;
 }
 bool SoulGoodie::selfDestructs() const{
-    return false;
-}
-bool SoulGoodie::isSprayable() const{
     return false;
 }

@@ -17,6 +17,7 @@ public:
     void setVerticalSpeed(double speed);
     virtual bool beSprayedIfAppropriate();
     virtual bool isCollisionAvoidanceWorthy() const;
+    virtual void getSprayed();
     virtual ~Actor();
 private:
     bool m_dead;
@@ -43,6 +44,7 @@ public:
       // Do what the spec says happens when hp units of damage is inflicted.
       // Return true if this agent dies as a result, otherwise false.
     virtual bool takeDamageAndPossiblyDie(int hp);
+    virtual void getSprayed();
     virtual int soundWhenHurt();
     virtual int soundWhenDie();
     virtual ~Agent();
@@ -73,11 +75,10 @@ public:
     virtual int soundWhenDie() const;
     int getHorizSpeed() const;
     void setHorizSpeed(int s);
-      // Move the pedestrian.  If the pedestrian doesn't go off screen and
-      // should pick a new movement plan, pick a new plan.
     virtual void moveAndPossiblyPickPlan();
     void setPlan(int plan);
     void decrementPlan();
+    void move();
     int getPlan();
     virtual ~Pedestrian();
 private:
@@ -113,7 +114,6 @@ class ZombieCab : public Pedestrian
 public:
     ZombieCab(StudentWorld* sw, double x, double y);
     virtual void doSomething();
-    virtual bool beSprayedIfAppropriate();
     bool checkDamage();
     void doneDamage();
     virtual void moveAndPossiblyPickPlan();
@@ -148,7 +148,7 @@ public:
       // Return whether the object dies after activation.
     virtual bool selfDestructs() const = 0;
     virtual bool isCollisionAvoidanceWorthy() const;
-    virtual bool isSprayable() const = 0;
+    virtual void getSprayed();
     virtual void move();
     virtual ~GhostRacerActivatedObject();
 };
@@ -162,7 +162,6 @@ public:
     virtual int getScoreIncrease() const;
     virtual int getSound() const;
     virtual bool selfDestructs() const;
-    virtual bool isSprayable() const;
     virtual ~OilSlick();
 };
 
@@ -173,8 +172,8 @@ public:
     virtual void doSomething();
     virtual void doActivity(GhostRacer* gr);
     virtual int getScoreIncrease() const;
+    virtual bool beSprayedIfAppropriate();
     virtual bool selfDestructs() const;
-    virtual bool isSprayable() const;
     virtual ~HealingGoodie();
 };
 
@@ -186,7 +185,7 @@ public:
     virtual void doActivity(GhostRacer* gr);
     virtual int getScoreIncrease() const;
     virtual bool selfDestructs() const;
-    virtual bool isSprayable() const;
+    virtual bool beSprayedIfAppropriate(); 
     virtual ~HolyWaterGoodie();
 };
 
@@ -199,7 +198,6 @@ public:
     virtual int getScoreIncrease() const;
     virtual int getSound() const;
     virtual bool selfDestructs() const;
-    virtual bool isSprayable() const;
     virtual ~SoulGoodie();
 };
 
