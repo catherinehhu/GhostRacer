@@ -55,9 +55,6 @@ void BorderLine::doSomething(){
         return;
     }
 }
-bool BorderLine::isCollisionAvoidanceWorthy() const{
-    return false; 
-}
 
 Agent::Agent(StudentWorld* sw, int imageID, double x, double y, int dir, double size, int hp)
 : Actor(sw, imageID, x, y, dir, size, 0)
@@ -78,9 +75,7 @@ void Agent::setHP(int hp){
         setDead();
     }
 }
-void Agent::getSprayed(){
-    return;
-}
+
 bool Agent::takeDamageAndPossiblyDie(int hp){
     setHP(hp);
     if (getHP() <= 0){
@@ -236,6 +231,9 @@ void Pedestrian::moveAndPossiblyPickPlan(){
         }
     }
 }
+bool Pedestrian::beSprayedIfAppropriate(){
+    return true;
+}
 void Pedestrian::decrementPlan(){
     m_plan--;
 }
@@ -257,6 +255,7 @@ void Pedestrian::move(){
         return;
     }
 }
+
 HumanPedestrian::HumanPedestrian(StudentWorld* sw, double x, double y)
 : Pedestrian(sw, IID_HUMAN_PED, x, y, 2.0)
 {}
@@ -275,9 +274,7 @@ void HumanPedestrian::doSomething(){
     }
     moveAndPossiblyPickPlan();
 }
-bool HumanPedestrian::beSprayedIfAppropriate(){
-    return true;
-}
+
 void HumanPedestrian::getSprayed(){
     takeDamageAndPossiblyDie(0);
 }
@@ -323,9 +320,7 @@ void ZombiePedestrian::doSomething(){
     move();
     moveAndPossiblyPickPlan();
 }
-bool ZombiePedestrian::beSprayedIfAppropriate(){
-    return true;
-}
+
 void ZombiePedestrian::getSprayed(){
     takeDamageAndPossiblyDie(-1);
 }
@@ -333,7 +328,7 @@ bool ZombiePedestrian::takeDamageAndPossiblyDie(int hp){
     setHP(hp);
     if (isDead()){
         world()->playSound(SOUND_PED_DIE);
-                if (randInt(1,5) == 1 && hp == -1){
+                if (randInt(1,5) == 1){
                     HealingGoodie* healinggoodie = new HealingGoodie(world(), getX(), getY());
                     world()->addActor(healinggoodie);
                 }
@@ -348,16 +343,14 @@ bool ZombiePedestrian::takeDamageAndPossiblyDie(int hp){
 int ZombiePedestrian::getGrunts(){
     return m_grunts;
 }
-bool ZombiePedestrian::decrementGrunts(){
+void ZombiePedestrian::decrementGrunts(){
     if (m_grunts == 0){
         world()->playSound(SOUND_ZOMBIE_ATTACK);
         m_grunts = 20;
         m_grunts--;
-        return true;
     }
     else{
         m_grunts--;
-        return false;
     }
 }
 ZombieCab::ZombieCab(StudentWorld* sw, double x, double y)
@@ -419,9 +412,7 @@ void ZombieCab::moveAndPossiblyPickPlan(){
         setVerticalSpeed(getVerticalSpeed() + randInt(-2,2));
     }
 }
-bool ZombieCab::beSprayedIfAppropriate(){
-    return true;
-    }
+
 void ZombieCab::getSprayed(){
     takeDamageAndPossiblyDie(-1);
 }
@@ -468,9 +459,6 @@ void Spray::doSomething(){
         return;
     }
 }
-bool Spray::isCollisionAvoidanceWorthy() const{
-    return false;
-}
 int Spray::getPixels(){
     return m_pixels;
 }
@@ -490,9 +478,7 @@ bool GhostRacerActivatedObject::beSprayedIfAppropriate(){
 int GhostRacerActivatedObject::getSound() const{
     return SOUND_GOT_GOODIE;
 }
-bool GhostRacerActivatedObject::isCollisionAvoidanceWorthy() const{
-    return false;
-}
+
 void GhostRacerActivatedObject::move(){
     double vert_speed = getVerticalSpeed() - world()->getGhostRacer()->getVerticalSpeed();
     double horiz_speed = 0;
@@ -509,22 +495,22 @@ void GhostRacerActivatedObject::getSprayed(){
         setDead();
     }
 }
+void GhostRacerActivatedObject::doSomething(){
+    move();
+    if (world()->getOverlappingGhostRacer(this)){
+        this->doActivity(world()->getGhostRacer());
+    }
+}
 OilSlick::OilSlick(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_OIL_SLICK, x, y, 0, randInt(2, 5), 1) {}
 OilSlick::~OilSlick(){}
-void OilSlick::doSomething(){
-    move();
-    if (world()->getOverlappingGhostRacer(this)){
-        doActivity(world()->getGhostRacer());
-    }
-}
 void OilSlick::doActivity(GhostRacer *gr){
     setDead();
     world()->playSound(getSound());
     gr->spin();
 }
 int OilSlick::getScoreIncrease() const{
-    return 1;
+    return 0;
 }
 int OilSlick::getSound() const{
     return SOUND_OIL_SLICK;
@@ -536,12 +522,6 @@ HealingGoodie::HealingGoodie(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_HEAL_GOODIE, x, y, 0, 1.0, 2)
 {}
 HealingGoodie::~HealingGoodie(){}
-void HealingGoodie::doSomething(){
-    move();
-    if (world()->getOverlappingGhostRacer(this)){
-        this->doActivity(world()->getGhostRacer());
-    }
-}
 void HealingGoodie::doActivity(GhostRacer *gr){
     world()->getGhostRacer()->setHP(10);
     setDead();
@@ -563,12 +543,6 @@ HolyWaterGoodie::HolyWaterGoodie(StudentWorld* sw, double x, double y)
     setDirection(90); 
 }
 HolyWaterGoodie::~HolyWaterGoodie(){}
-void HolyWaterGoodie::doSomething(){
-    move();
-    if (world()->getOverlappingGhostRacer(this)){
-        this->doActivity(world()->getGhostRacer());
-    }
-}
 void HolyWaterGoodie::doActivity(GhostRacer *gr){
     setDead();
     world()->getGhostRacer()->increaseSprays(10);

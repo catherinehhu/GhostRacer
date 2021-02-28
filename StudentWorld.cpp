@@ -266,6 +266,7 @@ void StudentWorld::createZombieCab(){
     }
 
 void StudentWorld::decrementBonus(){
+    if (m_bonus > 0)
     m_bonus--;
 }
 int StudentWorld::getBonus(){

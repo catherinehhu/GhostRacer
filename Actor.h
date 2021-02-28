@@ -29,7 +29,6 @@ class BorderLine : public Actor
 public:
     BorderLine(StudentWorld* sw, double x, double y, bool isYellow);
     virtual void doSomething();
-    virtual bool isCollisionAvoidanceWorthy() const;
     virtual ~BorderLine();
 };
 
@@ -41,7 +40,6 @@ public:
     int getHP() const;
     void setHP(int hp);
     virtual bool takeDamageAndPossiblyDie(int hp);
-    virtual void getSprayed();
     virtual int soundWhenHurt();
     virtual int soundWhenDie();
     virtual ~Agent();
@@ -74,6 +72,7 @@ public:
     void setHorizSpeed(int s);
     virtual void moveAndPossiblyPickPlan();
     void setPlan(int plan);
+    virtual bool beSprayedIfAppropriate();
     void decrementPlan();
     void move();
     int getPlan();
@@ -88,7 +87,6 @@ class HumanPedestrian : public Pedestrian
 public:
     HumanPedestrian(StudentWorld* sw, double x, double y);
     virtual void doSomething();
-    virtual bool beSprayedIfAppropriate();
     virtual void getSprayed();
     virtual bool takeDamageAndPossiblyDie(int hp);
     virtual ~HumanPedestrian();
@@ -99,12 +97,11 @@ class ZombiePedestrian : public Pedestrian
 public:
     ZombiePedestrian(StudentWorld* sw, double x, double y);
     virtual void doSomething();
-    virtual bool beSprayedIfAppropriate();
     virtual bool takeDamageAndPossiblyDie(int hp);
     virtual ~ZombiePedestrian();
     virtual void getSprayed();
     int getGrunts();
-    bool decrementGrunts();
+    void decrementGrunts();
 private:
     int m_grunts;
 };
@@ -118,8 +115,7 @@ public:
     void doneDamage();
     virtual void getSprayed();
     virtual void moveAndPossiblyPickPlan();
-    virtual bool beSprayedIfAppropriate();
-    virtual bool takeDamageAndPossiblyDie(int hp); 
+    virtual bool takeDamageAndPossiblyDie(int hp);
     virtual ~ZombieCab();
 private:
     bool m_damage;
@@ -130,7 +126,6 @@ class Spray : public Actor
 public:
     Spray(StudentWorld* sw, double x, double y, int dir);
     virtual void doSomething();
-    virtual bool isCollisionAvoidanceWorthy() const;
     virtual ~Spray();
     int getPixels();
     void decrementPixels(int pixels); 
@@ -147,9 +142,9 @@ public:
     virtual int getScoreIncrease() const = 0;
     virtual int getSound() const;
     virtual bool selfDestructs() const = 0;
-    virtual bool isCollisionAvoidanceWorthy() const;
     virtual void getSprayed();
-    virtual void move();
+    virtual void doSomething();
+    void move();
     virtual ~GhostRacerActivatedObject();
 };
 
@@ -157,7 +152,6 @@ class OilSlick : public GhostRacerActivatedObject
 {
 public:
     OilSlick(StudentWorld* sw, double x, double y);
-    virtual void doSomething();
     virtual void doActivity(GhostRacer* gr);
     virtual int getScoreIncrease() const;
     virtual int getSound() const;
@@ -169,7 +163,6 @@ class HealingGoodie : public GhostRacerActivatedObject
 {
 public:
     HealingGoodie(StudentWorld* sw, double x, double y);
-    virtual void doSomething();
     virtual void doActivity(GhostRacer* gr);
     virtual int getScoreIncrease() const;
     virtual bool beSprayedIfAppropriate();
@@ -181,7 +174,6 @@ class HolyWaterGoodie : public GhostRacerActivatedObject
 {
 public:
     HolyWaterGoodie(StudentWorld* sw, double x, double y);
-    virtual void doSomething();
     virtual void doActivity(GhostRacer* gr);
     virtual int getScoreIncrease() const;
     virtual bool selfDestructs() const;
