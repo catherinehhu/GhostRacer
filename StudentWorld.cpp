@@ -162,7 +162,7 @@ bool StudentWorld::overlaps(const Actor *a1, const Actor *a2) const{
     }
     return false;
 }
-bool StudentWorld::getOverlappingGhostRacer(Actor *a) const{
+bool StudentWorld::getOverlappingGhostRacer(const Actor *a) const{
     if (overlaps(a, getGhostRacer())){
         return true;
     }
@@ -171,7 +171,6 @@ bool StudentWorld::getOverlappingGhostRacer(Actor *a) const{
 bool StudentWorld::sprayOverlap(const Actor* spray) {
     list<Actor*>::iterator it;
     for (it = m_actors.begin(); it != m_actors.end(); it++) {
-        
         if (!(*it)->isDead() && overlaps(spray, *it) && (*it)->beSprayedIfAppropriate())
         {
             (*it)->getSprayed();
@@ -196,38 +195,44 @@ double StudentWorld::checkCollision(const Actor *actor){
 }
 void StudentWorld::createZombieCab(){
     int cur_lane = randInt(0,2);
-    int remainder = cur_lane % 3;
     list<Actor*>::iterator bottom = m_actors.begin();
     list<Actor*>::iterator top = m_actors.begin();
     list<Actor*>::iterator it = m_actors.begin();
-    int topDistance = 0;
-    int bottomDistance = VIEW_HEIGHT;
+    double topDistance = 0;
+    double bottomDistance = VIEW_HEIGHT;
     
-    for (int i = cur_lane%3; i != remainder; i++){
+    for (int i = 0; i < 3; i++){
         for (it = m_actors.begin(); it != m_actors.end(); it++){
-        if ((m_ghostracer->getY() < bottomDistance || m_ghostracer->getY() > topDistance) && (m_ghostracer->getX() > LEFT_EDGE + ROAD_WIDTH * cur_lane && m_ghostracer->getX() < LEFT_EDGE + ROAD_WIDTH * (cur_lane + 1))){
-            bottomDistance = -1;
-            bottom = m_actors.end();
-            topDistance = VIEW_HEIGHT;
-            top = m_actors.end();
-            cur_lane++;
-            break;
+            if (it == m_actors.begin() && m_ghostracer->getX() > LEFT_EDGE + cur_lane*ROAD_WIDTH/3 && m_ghostracer->getX() < LEFT_EDGE + (cur_lane + 1)*ROAD_WIDTH/3){
+                if ((m_ghostracer)->getY() < bottomDistance){
+                    bottomDistance = (m_ghostracer)->getY();
+                    bottom = m_actors.end();
+                }
+                if ((m_ghostracer)->getY() > topDistance){
+                    topDistance = (*it)->getY();
+                    top = m_actors.end();
+                }
+            }
+            if ((*it)->getX() > LEFT_EDGE + cur_lane*ROAD_WIDTH/3 && (*it)->getX() < LEFT_EDGE + (cur_lane + 1)*ROAD_WIDTH/3 && (*it)->isCollisionAvoidanceWorthy()){
+                if ((*it)->getY() < bottomDistance){
+                    bottomDistance = (*it)->getY();
+                    bottom = it;
+                }
+                if ((*it)->getY() > topDistance){
+                    topDistance = (*it)->getY();
+                    top = it;
+                }
+            }
+            if (bottomDistance <= VIEW_HEIGHT/3 || topDistance >= VIEW_HEIGHT * 2 /3){
+                cur_lane++;
+                cur_lane = cur_lane%3;
+                break;
+            }
         }
-        if ((*it)->isCollisionAvoidanceWorthy() && (*it)->getY() < bottomDistance && (*it)->getX() > LEFT_EDGE + ROAD_WIDTH * cur_lane && (*it)->getX() < LEFT_EDGE + ROAD_WIDTH * (cur_lane + 1)){
-            bottomDistance = (*it)->getY();
-            bottom = it;
-            cur_lane++;
+        if (bottom == m_actors.begin() || bottomDistance > (VIEW_HEIGHT/3) || top == m_actors.begin() || topDistance < (VIEW_HEIGHT * 2)/3){
             break;
-        }
-        if ((*it)->isCollisionAvoidanceWorthy() && (*it)->getY() > topDistance && (*it)->getX() > LEFT_EDGE + ROAD_WIDTH * cur_lane && (*it)->getX() < LEFT_EDGE + ROAD_WIDTH * (cur_lane + 1)){
-            topDistance = (*it)->getY();
-            top = it;
-            cur_lane++;
-            break;
-        }
         }
     }
-    cur_lane %= 3;
     double x = 0;
     double y = 0;
     double speed = 0;

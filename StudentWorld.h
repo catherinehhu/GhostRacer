@@ -24,9 +24,7 @@ public:
     int getSoulsLeft();
     
     bool overlaps(const Actor* a1, const Actor* a2) const;
-      // If actor a overlaps this world's GhostRacer, return a pointer to the
-      // GhostRacer; otherwise, return nullptr
-    bool getOverlappingGhostRacer(Actor* a) const;
+    bool getOverlappingGhostRacer(const Actor* a) const;
     bool sprayOverlap(const Actor *spray);
     double checkCollision(const Actor *actor);
     void createZombieCab();

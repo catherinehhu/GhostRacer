@@ -32,11 +32,7 @@ bool Actor::isCollisionAvoidanceWorthy() const{
     return true;
 }
 void Actor::getSprayed(){
-    if (beSprayedIfAppropriate()){
-        return;
-    }else {
-        return;
-    }
+    return;
 }
 bool Actor::beSprayedIfAppropriate() {
     return false;
@@ -263,8 +259,7 @@ void Pedestrian::move(){
 }
 HumanPedestrian::HumanPedestrian(StudentWorld* sw, double x, double y)
 : Pedestrian(sw, IID_HUMAN_PED, x, y, 2.0)
-{
-}
+{}
 HumanPedestrian::~HumanPedestrian(){}
 void HumanPedestrian::doSomething(){
     if (isDead()){
@@ -308,6 +303,7 @@ void ZombiePedestrian::doSomething(){
     if (world()->getOverlappingGhostRacer(this)){
         world()->getGhostRacer()->setHP(-5);
         takeDamageAndPossiblyDie(-2);
+        setDead(); 
         world()->increaseScore(150);
         return; 
     }
@@ -337,7 +333,7 @@ bool ZombiePedestrian::takeDamageAndPossiblyDie(int hp){
     setHP(hp);
     if (isDead()){
         world()->playSound(SOUND_PED_DIE);
-                if (randInt(1,5) == 1){
+                if (randInt(1,5) == 1 && hp == -1){
                     HealingGoodie* healinggoodie = new HealingGoodie(world(), getX(), getY());
                     world()->addActor(healinggoodie);
                 }
@@ -385,7 +381,6 @@ void ZombieCab::doSomething(){
         else{
             world()->playSound(SOUND_VEHICLE_CRASH);
             world()->getGhostRacer()->setHP(-20);
-            takeDamageAndPossiblyDie(0); 
             if (getX() <= world()->getGhostRacer()->getX()){
                 setHorizSpeed(-5);
                 setDirection(120 + randInt(0, 19));
@@ -400,10 +395,10 @@ void ZombieCab::doSomething(){
     }
     move();
     if (getVerticalSpeed() > world()->getGhostRacer()->getVerticalSpeed() && world()->checkCollision(this) == 0.5){
-        setVerticalSpeed(getVerticalSpeed()*0.5);
+        setVerticalSpeed(getVerticalSpeed() - 0.5);
     }
     else if (getVerticalSpeed() <=  world()->getGhostRacer()->getVerticalSpeed() && world()->checkCollision(this) == 1.5){
-        setVerticalSpeed(getVerticalSpeed()*1.5);
+        setVerticalSpeed(getVerticalSpeed() - 0.5);
     }
     moveAndPossiblyPickPlan();
 }
@@ -428,7 +423,7 @@ bool ZombieCab::beSprayedIfAppropriate(){
     return true;
     }
 void ZombieCab::getSprayed(){
-        takeDamageAndPossiblyDie(-1);
+    takeDamageAndPossiblyDie(-1);
 }
 bool ZombieCab::takeDamageAndPossiblyDie(int hp){
     setHP(hp);
@@ -446,9 +441,6 @@ bool ZombieCab::takeDamageAndPossiblyDie(int hp){
         return false;
     }
 }
-
-
-
 
 Spray::Spray(StudentWorld* sw, double x, double y, int dir)
 :Actor(sw, IID_HOLY_WATER_PROJECTILE, x, y, dir, 1.0, 1)
@@ -517,19 +509,18 @@ void GhostRacerActivatedObject::getSprayed(){
         setDead();
     }
 }
-
 OilSlick::OilSlick(StudentWorld* sw, double x, double y)
 :GhostRacerActivatedObject(sw, IID_OIL_SLICK, x, y, 0, randInt(2, 5), 1) {}
 OilSlick::~OilSlick(){}
 void OilSlick::doSomething(){
     move();
     if (world()->getOverlappingGhostRacer(this)){
-        setDead();
-        world()->playSound(SOUND_OIL_SLICK);
         doActivity(world()->getGhostRacer());
     }
 }
 void OilSlick::doActivity(GhostRacer *gr){
+    setDead();
+    world()->playSound(getSound());
     gr->spin();
 }
 int OilSlick::getScoreIncrease() const{
@@ -548,15 +539,14 @@ HealingGoodie::~HealingGoodie(){}
 void HealingGoodie::doSomething(){
     move();
     if (world()->getOverlappingGhostRacer(this)){
-        world()->getGhostRacer()->setHP(10);
-        setDead();
-        world()->playSound(SOUND_GOT_GOODIE);
-        world()->increaseScore(getScoreIncrease());
+        this->doActivity(world()->getGhostRacer());
     }
 }
 void HealingGoodie::doActivity(GhostRacer *gr){
-    gr->setHP(10);
+    world()->getGhostRacer()->setHP(10);
     setDead();
+    world()->playSound(getSound());
+    world()->increaseScore(getScoreIncrease());
 }
 int HealingGoodie::getScoreIncrease() const{
     return 250;
@@ -576,13 +566,15 @@ HolyWaterGoodie::~HolyWaterGoodie(){}
 void HolyWaterGoodie::doSomething(){
     move();
     if (world()->getOverlappingGhostRacer(this)){
-        setDead();
-        world()->getGhostRacer()->increaseSprays(10);
-        world()->playSound(SOUND_GOT_GOODIE);
-        world()->increaseScore(getScoreIncrease());
+        this->doActivity(world()->getGhostRacer());
     }
 }
-void HolyWaterGoodie::doActivity(GhostRacer *gr){}
+void HolyWaterGoodie::doActivity(GhostRacer *gr){
+    setDead();
+    world()->getGhostRacer()->increaseSprays(10);
+    world()->playSound(getSound());
+    world()->increaseScore(getScoreIncrease());
+}
 int HolyWaterGoodie::getScoreIncrease() const{
     return 50;
 }
@@ -599,10 +591,7 @@ SoulGoodie::~SoulGoodie(){}
 void SoulGoodie::doSomething(){
     move();
     if (world()->getOverlappingGhostRacer(this)){
-        world()->recordSoulSaved();
-        setDead();
-        world()->playSound(SOUND_GOT_SOUL);
-        world()->increaseScore(getScoreIncrease());
+        this->doActivity(world()->getGhostRacer());
     }
     int currDirection = getDirection();
     if (currDirection >= 349){
@@ -613,8 +602,10 @@ void SoulGoodie::doSomething(){
     }
 }
 void SoulGoodie::doActivity(GhostRacer *gr){
+    world()->recordSoulSaved();
     setDead();
-    world()->playSound(SOUND_GOT_SOUL);
+    world()->playSound(getSound());
+    world()->increaseScore(getScoreIncrease());
 }
 int SoulGoodie::getScoreIncrease() const{
     return 100;
