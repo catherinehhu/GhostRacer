@@ -74,7 +74,6 @@ int StudentWorld::move()
         m_actors.push_back(new BorderLine(this, ROAD_CENTER + ROAD_WIDTH / 2 - ROAD_WIDTH/3, new_border_y, false));
         m_lastWhiteY = new_border_y;
     }
-    
     // remove newly dead actors
     it = m_actors.begin();
     while (it != m_actors.end()){
@@ -88,6 +87,7 @@ int StudentWorld::move()
             it++;
         }
     }
+    // create new actors, determine probabilities 
     int ChanceVehicle = max(100 - getLevel() * 10, 20);
     int ChanceOilSlick = max(150 - getLevel() * 10, 40);
     int ChanceZombiePed = max(100 - getLevel() * 10, 20);
@@ -118,12 +118,10 @@ int StudentWorld::move()
         addActor(soulgoodie);
     }
     decrementBonus();
-    
     // update text
     ostringstream score;
         score  << "Score: " << getScore() << "  Lvl: " << getLevel() << "  Souls2Save: " << getSoulsLeft() << "  Lives: "<< getLives() << "  Health: " << m_ghostracer->getHP() << "  Sprays: " << m_ghostracer->getNumSprays() << "  Bonus:  " << getBonus();
         setGameStatText(score.str());
-    // continue playing
     if (m_ghostracer->isDead()){
         decLives();
         return GWSTATUS_PLAYER_DIED;
@@ -147,13 +145,13 @@ GhostRacer* StudentWorld::getGhostRacer() const{
 void StudentWorld::addActor(Actor* a){
     m_actors.push_back(a);
 }
-void StudentWorld::recordSoulSaved(){
+void StudentWorld::recordSoulSaved(){ // one less soul to save
     m_souls2save--;
 }
-int StudentWorld::getSoulsLeft(){
+int StudentWorld::getSoulsLeft(){ // return for string
     return m_souls2save;
 }
-bool StudentWorld::overlaps(const Actor *a1, const Actor *a2) const{
+bool StudentWorld::overlaps(const Actor *a1, const Actor *a2) const{ // checks for general overlap using formula from spec
     double delta_x = abs(a1->getX() - a2->getX());
     double delta_y = abs(a1->getY() - a2->getY());
     double radiussum = a1->getRadius() + a2->getRadius();
@@ -162,33 +160,35 @@ bool StudentWorld::overlaps(const Actor *a1, const Actor *a2) const{
     }
     return false;
 }
-bool StudentWorld::getOverlappingGhostRacer(const Actor *a) const{
+bool StudentWorld::getOverlappingGhostRacer(const Actor *a) const{ // checks if actor overlaps with ghostracer
     if (overlaps(a, getGhostRacer())){
         return true;
     }
     return false;
 }
-bool StudentWorld::sprayOverlap(const Actor* spray) {
+bool StudentWorld::sprayOverlap(const Actor* spray) { // checks if spray overlaps
     list<Actor*>::iterator it;
     for (it = m_actors.begin(); it != m_actors.end(); it++) {
-        if (!(*it)->isDead() && overlaps(spray, *it) && (*it)->beSprayedIfAppropriate())
+        if (!(*it)->isDead() && (*it)->beSprayedIfAppropriate() && overlaps(spray, *it))
         {
-            (*it)->getSprayed();
+            (*it)->getSprayed(); // spray once then break out of loop
             return true;
         }
     }
     return false;
 }
-double StudentWorld::checkCollision(const Actor *actor){
+double StudentWorld::checkCollision(const Actor *actor){ // checks zombiecab against other collision avoidance worthy actors
     list<Actor*>::iterator it;
     for (it = m_actors.begin(); it != m_actors.end(); it++) {
-        if (!(*it)->isDead() && (*it)->getY() - actor->getY() > 0 && (*it)->getY() - actor->getY() < 96 && (*it)->isCollisionAvoidanceWorthy())
-        {
-            return 0.5;
-        }
-        if (!(*it)->isDead() && actor->getY() - (*it)->getY() > 0 && actor->getY() - (*it)->getY() < 96 && (*it)->isCollisionAvoidanceWorthy())
-        {
-            return 1.5;
+        if ((*it)->isCollisionAvoidanceWorthy()){
+            if ((*it)->getY() > actor->getY() && (*it)->getY() - actor->getY() < 96)
+            {
+                return 0.5; // will increase zombiecab speed
+            }
+            if (actor->getY() > (*it)->getY() && actor->getY() - (*it)->getY() < 96)
+            {
+                return -0.5; // will decrease zombiecab speed
+            }
         }
     }
     return 1;
@@ -200,10 +200,9 @@ void StudentWorld::createZombieCab(){
     list<Actor*>::iterator it = m_actors.begin();
     double topDistance = 0;
     double bottomDistance = VIEW_HEIGHT;
-    
-    for (int i = 0; i < 3; i++){
+    for (int i = 0; i < 3; i++){ // will search up to 3 lanes
         for (it = m_actors.begin(); it != m_actors.end(); it++){
-            if (it == m_actors.begin() && m_ghostracer->getX() > LEFT_EDGE + cur_lane*ROAD_WIDTH/3 && m_ghostracer->getX() < LEFT_EDGE + (cur_lane + 1)*ROAD_WIDTH/3){
+            if (it == m_actors.begin() && m_ghostracer->getX() > LEFT_EDGE + cur_lane*ROAD_WIDTH/3 && m_ghostracer->getX() < LEFT_EDGE + (cur_lane + 1)*ROAD_WIDTH/3){ // gets checked at the beginning, looks for potential ghostracer in the current lane
                 if ((m_ghostracer)->getY() < bottomDistance){
                     bottomDistance = (m_ghostracer)->getY();
                     bottom = m_actors.end();
@@ -213,30 +212,30 @@ void StudentWorld::createZombieCab(){
                     top = m_actors.end();
                 }
             }
-            if ((*it)->getX() > LEFT_EDGE + cur_lane*ROAD_WIDTH/3 && (*it)->getX() < LEFT_EDGE + (cur_lane + 1)*ROAD_WIDTH/3 && (*it)->isCollisionAvoidanceWorthy()){
-                if ((*it)->getY() < bottomDistance){
+            if ((*it)->getX() > LEFT_EDGE + cur_lane*ROAD_WIDTH/3 && (*it)->getX() < LEFT_EDGE + (cur_lane + 1)*ROAD_WIDTH/3 && (*it)->isCollisionAvoidanceWorthy()){ // in the lane
+                if ((*it)->getY() < bottomDistance){ // closest collision worthy object from the bottom
                     bottomDistance = (*it)->getY();
                     bottom = it;
                 }
-                if ((*it)->getY() > topDistance){
+                if ((*it)->getY() > topDistance){ // closest collision worthy object from the top
                     topDistance = (*it)->getY();
                     top = it;
                 }
             }
-            if (bottomDistance <= VIEW_HEIGHT/3 || topDistance >= VIEW_HEIGHT * 2 /3){
+            if (bottomDistance <= VIEW_HEIGHT/3 || topDistance >= VIEW_HEIGHT * 2 /3){ // bad lane
                 cur_lane++;
-                cur_lane = cur_lane%3;
+                cur_lane = cur_lane%3; // updates value of cur_lane
                 break;
             }
         }
-        if (bottom == m_actors.begin() || bottomDistance > (VIEW_HEIGHT/3) || top == m_actors.begin() || topDistance < (VIEW_HEIGHT * 2)/3){
+        if (bottom == m_actors.begin() || bottomDistance > (VIEW_HEIGHT/3) || top == m_actors.begin() || topDistance < (VIEW_HEIGHT * 2)/3){ // after one loop thru the container and a good lane is found, break from outer loop
             break;
         }
     }
     double x = 0;
     double y = 0;
     double speed = 0;
-    switch(cur_lane){
+    switch(cur_lane){ // update x depending on the appropriate lane
         case 0:
             x = ROAD_CENTER - ROAD_WIDTH/3;
             break;
@@ -265,10 +264,10 @@ void StudentWorld::createZombieCab(){
     zombiecab->setVerticalSpeed(speed);
     }
 
-void StudentWorld::decrementBonus(){
+void StudentWorld::decrementBonus(){ // gets called during every tick
     if (m_bonus > 0)
     m_bonus--;
 }
-int StudentWorld::getBonus(){
+int StudentWorld::getBonus(){ // will be used to determine final score
     return m_bonus;
 }

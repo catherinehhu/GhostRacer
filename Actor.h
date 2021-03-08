@@ -3,7 +3,6 @@
 
 #include "GraphObject.h"
 class StudentWorld;
-
 class Actor : public GraphObject
 {
 public:
@@ -23,7 +22,6 @@ private:
     double m_vspeed;
     StudentWorld* m_world;
 };
-
 class BorderLine : public Actor
 {
 public:
@@ -31,7 +29,6 @@ public:
     virtual void doSomething();
     virtual ~BorderLine();
 };
-
 class Agent : public Actor
 {
 public:
@@ -39,14 +36,12 @@ public:
     virtual bool isCollisionAvoidanceWorthy() const;
     int getHP() const;
     void setHP(int hp);
-    virtual bool takeDamageAndPossiblyDie(int hp);
     virtual int soundWhenHurt();
     virtual int soundWhenDie();
     virtual ~Agent();
 private:
     int m_hp;
 };
-
 class GhostRacer : public Agent
 {
 public:
@@ -61,7 +56,6 @@ public:
 private:
     int m_sprays;
 };
-
 class Pedestrian : public Agent
 {
 public:
@@ -81,23 +75,19 @@ private:
     int m_hspeed;
     int m_plan;
 };
-
 class HumanPedestrian : public Pedestrian
 {
 public:
     HumanPedestrian(StudentWorld* sw, double x, double y);
     virtual void doSomething();
     virtual void getSprayed();
-    virtual bool takeDamageAndPossiblyDie(int hp);
     virtual ~HumanPedestrian();
 };
-
 class ZombiePedestrian : public Pedestrian
 {
 public:
     ZombiePedestrian(StudentWorld* sw, double x, double y);
     virtual void doSomething();
-    virtual bool takeDamageAndPossiblyDie(int hp);
     virtual ~ZombiePedestrian();
     virtual void getSprayed();
     int getGrunts();
@@ -105,7 +95,6 @@ public:
 private:
     int m_grunts;
 };
-
 class ZombieCab : public Pedestrian
 {
 public:
@@ -115,12 +104,10 @@ public:
     void doneDamage();
     virtual void getSprayed();
     virtual void moveAndPossiblyPickPlan();
-    virtual bool takeDamageAndPossiblyDie(int hp);
     virtual ~ZombieCab();
 private:
     bool m_damage;
 };
-
 class Spray : public Actor
 {
 public:
@@ -132,7 +119,6 @@ public:
 private:
     int m_pixels;
 };
-
 class GhostRacerActivatedObject : public Actor
 {
 public:
@@ -147,7 +133,6 @@ public:
     void move();
     virtual ~GhostRacerActivatedObject();
 };
-
 class OilSlick : public GhostRacerActivatedObject
 {
 public:
@@ -158,7 +143,6 @@ public:
     virtual bool selfDestructs() const;
     virtual ~OilSlick();
 };
-
 class HealingGoodie : public GhostRacerActivatedObject
 {
 public:
@@ -169,7 +153,6 @@ public:
     virtual bool selfDestructs() const;
     virtual ~HealingGoodie();
 };
-
 class HolyWaterGoodie : public GhostRacerActivatedObject
 {
 public:
@@ -180,7 +163,6 @@ public:
     virtual bool beSprayedIfAppropriate(); 
     virtual ~HolyWaterGoodie();
 };
-
 class SoulGoodie : public GhostRacerActivatedObject
 {
 public:
